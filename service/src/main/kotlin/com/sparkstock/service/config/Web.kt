@@ -126,6 +126,9 @@ class GlobalExceptionHandler {
     @ExceptionHandler(OptimisticLockingFailureException::class)
     fun stale(ex: OptimisticLockingFailureException) = error(HttpStatus.CONFLICT, "Conflict", "Someone else changed this device at the same time, reload and try again")
 
+    @ExceptionHandler(com.sparkstock.service.services.NotConfiguredException::class)
+    fun notConfigured(ex: Exception) = error(HttpStatus.SERVICE_UNAVAILABLE, "Not configured", ex.message)
+
     @ExceptionHandler(ForbiddenException::class)
     fun forbidden(ex: ForbiddenException) = error(HttpStatus.FORBIDDEN, "Forbidden", ex.message)
 

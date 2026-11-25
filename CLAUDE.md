@@ -18,6 +18,7 @@ Inventario de dispositivos de la suite de SparkyTC (https://github.com/cesared19
 - **Proyecto:** `devices.project_code` (código corto del proyecto de SparkyTC, p. ej. VR) y `devices.external_id` (V2).
 - **Recursos:** el backend corre con `-Xmx256m -XX:+UseSerialGC` (`STOCK_JAVA_OPTIONS`): ~300 MB de RAM, sin CPU en reposo.
 - **Recordatorios:** `ReminderService` (cron `sparkstock.reminders.cron`, 9:00) manda a la campana de SparkyTC (`SparkyTCClient.notify`, `POST /api/system/v1/notifications` con `STOCK_INTEGRATION_TOKEN`) préstamos por vencer (una vez por préstamo), atrasados (uno por día) y garantías a los admins (uno por dispositivo y fecha); el `sourceRef` evita duplicados. `POST /api/v1/reminders/send` (admins) los manda ya. Desactivados en las pruebas (`application-test.properties`).
+- **Cobertura (desde 0.3.0):** `coverage_targets` (V3: proyecto, modelo, versión opcional = cualquiera) que administran los admins; `CoverageService` cruza los objetivos con `GET /api/system/v1/projects/{code}/device-results` de SparkyTC (por modelo ignorando mayúsculas y versión si la hay) y da PASSING / FAILING / MISSING, más lo probado sin ser objetivo (`routes/coverage.tsx`). Sin `STOCK_INTEGRATION_TOKEN` responde 503 (`NotConfiguredException`).
 - **Etiquetas QR:** el PDF se genera en el navegador (`utility/Labels.ts`, jsPDF + qrcode). El QR lleva `PUBLIC_URL/t/<tag>` (`routes/t.$tag.tsx`), que se abre con la cámara del teléfono, sin HTTPS.
 
 ## Cómo trabajar
@@ -27,9 +28,7 @@ Inventario de dispositivos de la suite de SparkyTC (https://github.com/cesared19
 - Revisa los cambios de interfaz a 390 px, 820 px y escritorio, en claro y oscuro.
 - Igual que en SparkyTC: no crear nada en lote en GitHub (issues, etiquetas, comentarios); el usuario decide cuándo abrir y fusionar PRs.
 
-## Pendiente (por fases)
+## Pendiente
 
-1. SparkyTC: dispositivo por resultado (modo Off/Opcional/Obligatorio por proyecto) usando `/api/integration/v1/devices`.
-2. Avisos (atrasos, garantías) a la campana de SparkyTC.
-3. Confluence Cloud: una página por dispositivo (la importación por CSV ya existe).
-4. Matriz de cobertura por proyecto y build.
+- Confluence Cloud: una página por dispositivo (la importación por CSV ya existe).
+- Hecho en SparkyTC (cesared19/SparkyTC#65, #66, #67): dispositivo por resultado, avisos externos y resultados por dispositivo; SparkStock necesita SparkyTC 2.9.0 o posterior para usarlos.

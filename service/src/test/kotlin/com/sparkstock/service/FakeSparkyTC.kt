@@ -55,6 +55,24 @@ object FakeSparkyTC {
                     send(exchange, 200, mapOf("status" to "SUCCESS", "data" to mapOf("created" to created)))
                 }
             }
+            path.startsWith("/api/system/v1/projects") && token != SYSTEM_TOKEN ->
+                send(exchange, 401, mapOf("status" to "ERROR", "message" to "Send the suite's integration token"))
+            path == "/api/system/v1/projects" ->
+                send(exchange, 200, mapOf("status" to "SUCCESS", "data" to listOf(
+                    mapOf("projectShortCode" to "VR", "title" to "VR game", "deviceMode" to "REQUIRED", "builds" to listOf("1.1", "1.0")),
+                )))
+            path == "/api/system/v1/projects/VR/device-results" -> {
+                if (exchange.requestURI.query?.contains("build=9.9") == true) {
+                    send(exchange, 404, mapOf("status" to "ERROR", "message" to "No build 9.9"))
+                } else {
+                    send(exchange, 200, mapOf("status" to "SUCCESS", "data" to mapOf("projectShortCode" to "VR", "build" to "1.1", "devices" to listOf(
+                        mapOf("ref" to "VR-0001", "model" to "Focus 3", "version" to "5.2", "passed" to 3, "testCases" to 3),
+                        mapOf("ref" to "VR-0003", "model" to "Focus 3", "version" to "5.2", "passed" to 1, "skipped" to 1, "testCases" to 2),
+                        mapOf("ref" to "VR-0002", "model" to "XR Elite", "version" to "6.0", "passed" to 1, "failed" to 1, "testCases" to 2),
+                        mapOf("ref" to "PC-0001", "model" to "Cyborg 16", "version" to "Windows 11", "passed" to 1, "testCases" to 1),
+                    ))))
+                }
+            }
             path == "/api/v1/auth/login" -> {
                 val body = mapper.readTree(exchange.requestBody)
                 val a = accounts[body.get("username").asText()]

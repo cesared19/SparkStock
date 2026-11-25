@@ -6,3 +6,6 @@ class NotFoundException(message: String) : RuntimeException(message)
 class ConflictException(message: String) : RuntimeException(message)
 
 class ForbiddenException(message: String) : RuntimeException(message)
+
+/** Something needs a setting that's empty, e.g. STOCK_INTEGRATION_TOKEN. */
+class NotConfiguredException(message: String) : RuntimeException(message)

@@ -51,3 +51,7 @@ interface DeviceRepository : JpaRepository<Device, UUID> {
 interface DeviceEventRepository : JpaRepository<DeviceEvent, Long> {
     fun findAllByDeviceIdOrderByCreatedAtDescIdDesc(deviceId: UUID): List<DeviceEvent>
 }
+
+interface CoverageTargetRepository : JpaRepository<CoverageTarget, Long> {
+    fun findAllByProjectCodeIgnoreCaseOrderByModelAscVersionAsc(projectCode: String): List<CoverageTarget>
+}

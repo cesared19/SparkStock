@@ -44,6 +44,25 @@ data class SparkyTCNotification(
     val app: String = "SparkStock",
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SparkyTCProject(val projectShortCode: String, val title: String, val deviceMode: String? = null, val builds: List<String> = emptyList())
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SparkyTCDeviceResult(
+    val ref: String,
+    val name: String? = null,
+    val model: String? = null,
+    val version: String? = null,
+    val passed: Int = 0,
+    val failed: Int = 0,
+    val blocked: Int = 0,
+    val skipped: Int = 0,
+    val testCases: Int = 0,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SparkyTCBuildDeviceResults(val projectShortCode: String, val build: String, val devices: List<SparkyTCDeviceResult> = emptyList())
+
 /** SparkyTC rejected the credentials or the session. */
 class SparkyTCUnauthorizedException(message: String) : RuntimeException(message)
 
@@ -116,6 +135,32 @@ class SparkyTCClient(builder: RestClient.Builder, properties: SparkStockProperti
         return errorReader.readTree(body).path("data").path("created").asBoolean(false)
     }
 
+    /** Every project with its builds, newest first (system API, with the suite's integration token). */
+    fun projects(integrationToken: String): List<SparkyTCProject> = call {
+        client.get().uri("/api/system/v1/projects")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $integrationToken")
+            .retrieve()
+            .body(ProjectListEnvelope::class.java)?.data
+    }
+
+    /** How the test cases went on each device in a build (the current one when null); null when there's no such build. */
+    fun deviceResults(integrationToken: String, projectShortCode: String, build: String?): SparkyTCBuildDeviceResults? {
+        return try {
+            call {
+                client.get().uri { builder ->
+                    builder.path("/api/system/v1/projects/{code}/device-results")
+                    build?.let { builder.queryParam("build", it) }
+                    builder.build(projectShortCode)
+                }
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer $integrationToken")
+                    .retrieve()
+                    .body(DeviceResultsEnvelope::class.java)?.data
+            }
+        } catch (ex: SparkyTCUnavailableException) {
+            if ((ex.cause as? RestClientResponseException)?.statusCode?.value() == 404) null else throw ex
+        }
+    }
+
     private fun <T> call(request: () -> T?): T {
         try {
             return request() ?: throw SparkyTCUnavailableException("SparkyTC sent an empty answer")
@@ -135,4 +180,6 @@ class SparkyTCClient(builder: RestClient.Builder, properties: SparkStockProperti
     class LoginEnvelope(val data: SparkyTCLogin? = null)
     class UserEnvelope(val data: SparkyTCUser? = null)
     class UserListEnvelope(val data: List<SparkyTCUser>? = null)
+    class ProjectListEnvelope(val data: List<SparkyTCProject>? = null)
+    class DeviceResultsEnvelope(val data: SparkyTCBuildDeviceResults? = null)
 }

@@ -23,6 +23,10 @@ devices a tester has (to record the device a test ran on).
   importing the same file again updates instead of duplicating. Unknown types are created as lent types with
   *Firmware / OS* and *Accessories* fields, and `N/A` cells count as empty. Status and holders are never changed.
 - **Project** per device (the SparkyTC project short code, e.g. `VR`), for the coverage matrix later.
+- **Test coverage** (**Coverage**): for a SparkyTC project and build, which target models (and versions) results were
+  recorded on and how they went (*tested, passing*, *tested, with failures* or *not tested*), plus models tested without
+  being targets. Admins set each project's targets, picking from the models in stock or typing them; a target without
+  version counts any version. Results come from SparkyTC 2.9.0 or later, where testers choose the device of each result.
 - **Reminders in SparkyTC's bell**, every day at 9:00 (`REMINDERS_CRON`, in `TZ`): the borrower of a loan due within a
   day, the borrower of an overdue loan (every day until it's returned), and every admin about warranties ending within
   30 days. Each one is sent once (SparkyTC keeps one per reference), so restarts never repeat them; admins can send
@@ -58,6 +62,9 @@ The backend is published only on `127.0.0.1`; SparkyTC reaches it on the shared 
 - `GET /api/integration/v1/devices/{ref}` – one device by asset tag.
 
 Each device comes as `{ ref, id, name, manufacturer, model, type, usage, version, status, holderUserID, holderName, dueAt }`.
+
+SparkStock calls SparkyTC's system API (`/api/system/v1`, same token) for the reminders (`POST /notifications`) and the
+coverage matrix (`GET /projects` and `GET /projects/{code}/device-results?build=`).
 `ref` is the asset tag and `version` the type's coverage field (the headset's system version).
 
 ## Deploying (next to SparkyTC)

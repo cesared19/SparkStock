@@ -82,17 +82,17 @@ function TopNavigation({
 	sparkyTCUrl: string
 }) {
 	const [open, setOpen] = useState(false)
+	const adminItems = [
+		{ to: '/admin/types', label: 'Device types', end: false },
+		{ to: '/admin/locations', label: 'Locations', end: false },
+		{ to: '/admin/import', label: 'Import', end: false },
+	]
 	const items = [
 		{ to: '/', label: 'Dashboard', end: true },
 		{ to: '/devices', label: 'Devices', end: false },
 		{ to: '/labels', label: 'Labels', end: false },
-		...(user.role === 'ADMIN'
-			? [
-					{ to: '/admin/types', label: 'Device types', end: false },
-					{ to: '/admin/locations', label: 'Locations', end: false },
-					{ to: '/admin/import', label: 'Import', end: false },
-				]
-			: []),
+		{ to: '/coverage', label: 'Coverage', end: false },
+		...(user.role === 'ADMIN' ? adminItems : []),
 	]
 	const linkClass = ({ isActive }: { isActive: boolean }) =>
 		`block rounded-md px-3 py-2 text-sm font-medium ${
@@ -204,11 +204,11 @@ export function ErrorBoundary() {
 		? error.status === 403
 			? 'You do not have permission to view this page.'
 			: error.status === 404
-				? 'This page or device does not exist.'
-				: `${error.status} ${error.statusText || error.data}`
+			? 'This page or device does not exist.'
+			: `${error.status} ${error.statusText || error.data}`
 		: error instanceof Error
-			? error.message
-			: 'An unexpected error occurred'
+		? error.message
+		: 'An unexpected error occurred'
 	return (
 		<div className="flex min-h-screen items-center justify-center p-6">
 			<div className="max-w-md space-y-4 text-center">

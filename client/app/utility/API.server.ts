@@ -7,17 +7,14 @@ export class UnauthorizedError extends Error {}
 
 /** An error the backend explained (validation, conflict...), shown to the user as is. */
 export class APIError extends Error {
-	constructor(
-		message: string,
-		public status: number,
-	) {
+	constructor(message: string, public status: number) {
 		super(message)
 	}
 }
 
 export async function apiRequest<T>(
 	path: string,
-	init: { method?: string; body?: unknown; token?: string } = {},
+	init: { method?: string; body?: unknown; token?: string } = {}
 ): Promise<T> {
 	let response: Response
 	try {
@@ -32,7 +29,7 @@ export async function apiRequest<T>(
 	} catch (error) {
 		console.error(`Unable to reach the SparkStock backend at ${API_URL}`, error)
 		throw new Error(
-			`Unable to reach the SparkStock backend (${API_URL}). Check that it is running and that API_URL points to it.`,
+			`Unable to reach the SparkStock backend (${API_URL}). Check that it is running and that API_URL points to it.`
 		)
 	}
 	if (response.status === 401 && init.token) {
@@ -42,7 +39,7 @@ export async function apiRequest<T>(
 	if (!response.ok || json.status !== 'SUCCESS') {
 		throw new APIError(
 			json.message ?? `The request failed (${response.status})`,
-			response.status,
+			response.status
 		)
 	}
 	return (json as DataResponse<T>).data
@@ -50,15 +47,12 @@ export async function apiRequest<T>(
 
 /** The API bound to the signed-in user's session; an expired session sends the user to the login page. */
 export class API {
-	constructor(
-		private request: Request,
-		public token: string,
-	) {}
+	constructor(private request: Request, public token: string) {}
 
 	private async call<T>(
 		path: string,
 		method: string,
-		body?: unknown,
+		body?: unknown
 	): Promise<T> {
 		try {
 			return await apiRequest<T>(path, { method, body, token: this.token })
@@ -77,6 +71,9 @@ export class API {
 	}
 	put<T>(path: string, body: unknown) {
 		return this.call<T>(path, 'PUT', body)
+	}
+	delete<T>(path: string) {
+		return this.call<T>(path, 'DELETE')
 	}
 }
 
@@ -98,7 +95,7 @@ export async function requireAdmin(request: Request) {
 
 /** Runs an action and turns the backend's explanation of a refusal into `{ error }` for the form. */
 export async function attempt<T>(
-	run: () => Promise<T>,
+	run: () => Promise<T>
 ): Promise<T | { error: string }> {
 	try {
 		return await run()

@@ -120,3 +120,45 @@ export interface LoginResponse {
 	expiresAt: Timestamp
 	user: User
 }
+
+export interface SparkyTCProject {
+	projectShortCode: string
+	title: string
+	deviceMode?: string
+	// newest first: the first one is the current build
+	builds: string[]
+}
+
+export interface KnownModel {
+	model: string
+	version?: string
+}
+
+export interface CoverageTarget {
+	id: number
+	projectCode: string
+	model: string
+	version?: string
+}
+
+export type CoverageState = 'PASSING' | 'FAILING' | 'MISSING'
+
+export interface CoverageRow {
+	model: string
+	version?: string
+	target?: CoverageTarget
+	state: CoverageState
+	passed: number
+	failed: number
+	blocked: number
+	skipped: number
+	devices: string[]
+}
+
+export interface CoverageMatrix {
+	projectCode: string
+	build?: string
+	rows: CoverageRow[]
+	covered: number
+	targets: number
+}
