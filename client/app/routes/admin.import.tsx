@@ -4,6 +4,7 @@ import {
 } from '@remix-run/node'
 import { Form, Link, useActionData, useNavigation } from '@remix-run/react'
 import { useState } from 'react'
+import { useT } from '~/i18n'
 import { attempt, requireAdmin } from '~/utility/API.server'
 import { parseCSV } from '~/utility/CSV'
 
@@ -20,79 +21,42 @@ type Target =
 	| 'location'
 	| 'notes'
 
-// what each SparkStock field is called in a spreadsheet, e.g. the Confluence "Testing Devices" database
-const TARGETS: {
-	key: Target
-	label: string
-	help: string
-	headers: string[]
-}[] = [
-	{
-		key: 'externalId',
-		label: 'ID',
-		help: 'Matches the device next time you import the same file',
-		headers: ['id', 'asset id', 'external id'],
-	},
+// what each SparkStock field is called in a spreadsheet (English or Spanish headers), e.g. the Confluence
+// "Testing Devices" database: ID, Device Name, Model, Brand, Serial Number, Type, Firmware, Attachments, Project Tag
+const TARGETS: { key: Target; headers: string[] }[] = [
+	{ key: 'externalId', headers: ['id', 'asset id', 'external id'] },
 	{
 		key: 'name',
-		label: 'Name',
-		help: '',
-		headers: ['device name', 'name', 'nombre', 'device'],
+		headers: ['device name', 'name', 'nombre', 'device', 'dispositivo'],
 	},
-	{
-		key: 'model',
-		label: 'Model',
-		help: 'Required (or the name)',
-		headers: ['model', 'modelo'],
-	},
+	{ key: 'model', headers: ['model', 'modelo'] },
 	{
 		key: 'manufacturer',
-		label: 'Manufacturer',
-		help: '',
 		headers: ['brand', 'manufacturer', 'marca', 'fabricante', 'vendor'],
 	},
 	{
 		key: 'serialNumber',
-		label: 'Serial number',
-		help: '',
-		headers: ['serial number', 'serial', 'sn', 's/n', 'número de serie'],
+		headers: [
+			'serial number',
+			'serial',
+			'sn',
+			's/n',
+			'número de serie',
+			'numero de serie',
+		],
 	},
 	{
 		key: 'typeName',
-		label: 'Type',
-		help: 'New types are created as lent types',
-		headers: ['type', 'tipo', 'category', 'categoría'],
+		headers: ['type', 'tipo', 'category', 'categoría', 'categoria'],
 	},
 	{
 		key: 'version',
-		label: 'Firmware / OS',
-		help: "Goes to the type's version field",
 		headers: ['firmware', 'version', 'os', 'system version', 'versión'],
 	},
-	{
-		key: 'accessories',
-		label: 'Accessories',
-		help: '',
-		headers: ['attachments', 'accessories', 'accesorios'],
-	},
-	{
-		key: 'projectCode',
-		label: 'Project',
-		help: 'The SparkyTC project, e.g. VR',
-		headers: ['project tag', 'project', 'proyecto'],
-	},
-	{
-		key: 'location',
-		label: 'Location',
-		help: 'New locations are created',
-		headers: ['location', 'ubicación', 'ubicacion'],
-	},
-	{
-		key: 'notes',
-		label: 'Notes',
-		help: '',
-		headers: ['notes', 'notas', 'comments'],
-	},
+	{ key: 'accessories', headers: ['attachments', 'accessories', 'accesorios'] },
+	{ key: 'projectCode', headers: ['project tag', 'project', 'proyecto'] },
+	{ key: 'location', headers: ['location', 'ubicación', 'ubicacion'] },
+	{ key: 'notes', headers: ['notes', 'notas', 'comments', 'comentarios'] },
 ]
 
 interface RowResult {
@@ -127,7 +91,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	const rows = JSON.parse(String(form.get('rows') ?? '[]'))
 	const dryRun = form.get('intent') !== 'import'
 	return attempt(() =>
-		api.post<ImportResult>('/import/devices', { rows, dryRun }),
+		api.post<ImportResult>('/import/devices', { rows, dryRun })
 	)
 }
 
@@ -135,7 +99,7 @@ function guess(headers: string[]) {
 	const mapping: Partial<Record<Target, number>> = {}
 	for (const target of TARGETS) {
 		const index = headers.findIndex((h) =>
-			target.headers.includes(h.trim().toLowerCase()),
+			target.headers.includes(h.trim().toLowerCase())
 		)
 		if (index >= 0) mapping[target.key] = index
 	}
@@ -150,6 +114,7 @@ const ACTION_STYLE: Record<RowResult['action'], string> = {
 }
 
 export default function ImportDevices() {
+	const t = useT()
 	const result = useActionData<typeof action>()
 	const busy = useNavigation().state !== 'idle'
 	const [fileName, setFileName] = useState('')
@@ -178,17 +143,14 @@ export default function ImportDevices() {
 
 	return (
 		<main className="mx-auto max-w-6xl space-y-4 p-4">
-			<h1 className="text-2xl font-semibold text-gray-900">Import devices</h1>
-			<p className="text-sm text-gray-600">
-				Import a CSV file, e.g. a Confluence database exported with{' '}
-				<strong>••• → Export → CSV</strong>. Importing the same file again
-				updates the devices instead of duplicating them (matched by ID, then
-				serial number). Status and who has a device are never changed.
-			</p>
+			<h1 className="text-2xl font-semibold text-gray-900">
+				{t.importPage.title}
+			</h1>
+			<p className="text-sm text-gray-600">{t.importPage.intro}</p>
 
 			<section className="card">
 				<label className="text-sm font-medium text-gray-700">
-					CSV file
+					{t.importPage.file}
 					<input
 						type="file"
 						accept=".csv,text/csv"
@@ -198,48 +160,53 @@ export default function ImportDevices() {
 				</label>
 				{fileName && (
 					<p className="mt-2 text-sm text-gray-600">
-						{fileName}: {body.length} rows, {headers.length} columns
+						{t.importPage.fileSummary(fileName, body.length, headers.length)}
 					</p>
 				)}
 			</section>
 
 			{headers.length > 0 && (
 				<section className="card space-y-3">
-					<h2 className="font-semibold text-gray-900">Columns</h2>
+					<h2 className="font-semibold text-gray-900">
+						{t.importPage.columns}
+					</h2>
 					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-						{TARGETS.map((target) => (
-							<label key={target.key} className="text-sm text-gray-700">
-								{target.label}
-								<select
-									value={mapping[target.key] ?? ''}
-									onChange={(e) =>
-										setMapping({
-											...mapping,
-											[target.key]:
-												e.target.value === ''
-													? undefined
-													: Number(e.target.value),
-										})
-									}
-									className="input mt-1"
-								>
-									<option value="">(not imported)</option>
-									{headers.map((header, index) => (
-										<option key={index} value={index}>
-											{header}
-											{body[0]?.[index]
-												? ` — e.g. ${body[0][index].slice(0, 30)}`
-												: ''}
-										</option>
-									))}
-								</select>
-								{target.help && (
-									<span className="mt-1 block text-xs text-gray-500">
-										{target.help}
-									</span>
-								)}
-							</label>
-						))}
+						{TARGETS.map((target) => {
+							const [label, help] = t.importPage.targets[target.key]
+							return (
+								<label key={target.key} className="text-sm text-gray-700">
+									{label}
+									<select
+										value={mapping[target.key] ?? ''}
+										onChange={(e) =>
+											setMapping({
+												...mapping,
+												[target.key]:
+													e.target.value === ''
+														? undefined
+														: Number(e.target.value),
+											})
+										}
+										className="input mt-1"
+									>
+										<option value="">{t.importPage.notImported}</option>
+										{headers.map((header, index) => (
+											<option key={index} value={index}>
+												{header}
+												{body[0]?.[index]
+													? t.importPage.example(body[0][index].slice(0, 30))
+													: ''}
+											</option>
+										))}
+									</select>
+									{help && (
+										<span className="mt-1 block text-xs text-gray-500">
+											{help}
+										</span>
+									)}
+								</label>
+							)
+						})}
 					</div>
 					<Form method="post" className="flex flex-wrap gap-2">
 						<input type="hidden" name="rows" value={JSON.stringify(rows)} />
@@ -250,7 +217,7 @@ export default function ImportDevices() {
 							disabled={busy || rows.length === 0}
 							className="btn-secondary"
 						>
-							Preview
+							{t.importPage.preview}
 						</button>
 						{report && report.dryRun && report.errors === 0 && (
 							<button
@@ -260,7 +227,7 @@ export default function ImportDevices() {
 								disabled={busy}
 								className="btn-primary"
 							>
-								Import {report.created + report.updated} devices
+								{t.importPage.importN(report.created + report.updated)}
 							</button>
 						)}
 					</Form>
@@ -277,50 +244,61 @@ export default function ImportDevices() {
 			)}
 
 			{report && (
-				<section className="card space-y-3" aria-label="Import result">
+				<section className="card space-y-3" aria-label={t.importPage.result}>
 					<p
 						role="status"
 						className={`rounded-md p-3 text-sm ${
 							report.errors > 0
 								? 'bg-red-50 text-red-700'
 								: report.applied
-									? 'bg-green-50 text-green-700'
-									: 'bg-blue-100 text-blue-800'
+								? 'bg-green-50 text-green-700'
+								: 'bg-blue-100 text-blue-800'
 						}`}
 					>
 						{report.errors > 0
-							? `${report.errors} rows have errors. Fix them in the file and preview again; nothing was saved.`
+							? t.importPage.errors(report.errors)
 							: report.applied
-								? `Imported: ${report.created} new, ${report.updated} updated, ${report.unchanged} unchanged.`
-								: `Preview: ${report.created} new, ${report.updated} updated, ${report.unchanged} unchanged. Nothing is saved until you import.`}
+							? t.importPage.imported(
+									report.created,
+									report.updated,
+									report.unchanged
+							  )
+							: t.importPage.previewed(
+									report.created,
+									report.updated,
+									report.unchanged
+							  )}
 					</p>
 					{report.newTypes.length > 0 && (
 						<p className="text-sm text-gray-700">
-							New device types (lent, with Firmware / OS and Accessories
-							fields): <strong>{report.newTypes.join(', ')}</strong>. You can
-							change them later in{' '}
+							{t.importPage.newTypes}{' '}
+							<strong>{report.newTypes.join(', ')}</strong>.{' '}
+							{t.importPage.changeLater}{' '}
 							<Link
 								to="/admin/types"
 								className="text-brand-600 hover:underline"
 							>
-								Device types
+								{t.nav.types}
 							</Link>
 							.
 						</p>
 					)}
 					{report.newLocations.length > 0 && (
 						<p className="text-sm text-gray-700">
-							New locations: <strong>{report.newLocations.join(', ')}</strong>.
+							{t.importPage.newLocations}{' '}
+							<strong>{report.newLocations.join(', ')}</strong>.
 						</p>
 					)}
 					<table className="w-full text-left text-sm">
 						<thead className="border-b border-gray-200 text-xs uppercase text-gray-500">
 							<tr>
-								<th className="py-2 pr-3 font-medium">Row</th>
-								<th className="py-2 pr-3 font-medium">Result</th>
-								<th className="py-2 pr-3 font-medium">Device</th>
+								<th className="py-2 pr-3 font-medium">{t.importPage.row}</th>
+								<th className="py-2 pr-3 font-medium">
+									{t.importPage.outcome}
+								</th>
+								<th className="py-2 pr-3 font-medium">{t.importPage.device}</th>
 								<th className="hidden py-2 font-medium sm:table-cell">
-									Details
+									{t.importPage.details}
 								</th>
 							</tr>
 						</thead>
@@ -330,9 +308,11 @@ export default function ImportDevices() {
 									<td className="py-2 pr-3 text-gray-600">{row.line}</td>
 									<td className="py-2 pr-3">
 										<span
-											className={`rounded-full px-2 py-0.5 text-xs font-medium ${ACTION_STYLE[row.action]}`}
+											className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+												ACTION_STYLE[row.action]
+											}`}
 										>
-											{row.action.toLowerCase()}
+											{t.importPage.actions[row.action]}
 										</span>
 									</td>
 									<td className="py-2 pr-3 text-gray-900">

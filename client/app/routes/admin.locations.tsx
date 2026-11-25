@@ -8,6 +8,7 @@ import {
 	useLoaderData,
 	useNavigation,
 } from '@remix-run/react'
+import { useT } from '~/i18n'
 import type { Location } from '~/models/types'
 import { attempt, requireAdmin } from '~/utility/API.server'
 
@@ -26,34 +27,35 @@ export async function action({ request }: ActionFunctionArgs) {
 		return attempt(() =>
 			api
 				.put<Location>(`/locations/${id}`, { name, isArchived })
-				.then(() => ({ ok: true })),
+				.then(() => ({ ok: true }))
 		)
 	}
 	return attempt(() =>
-		api.post<Location>('/locations', { name }).then(() => ({ ok: true })),
+		api.post<Location>('/locations', { name }).then(() => ({ ok: true }))
 	)
 }
 
 export default function Locations() {
+	const t = useT()
 	const { locations } = useLoaderData<typeof loader>()
 	const result = useActionData<typeof action>()
 	const busy = useNavigation().state !== 'idle'
 	return (
 		<main className="mx-auto max-w-3xl space-y-4 p-4">
-			<h1 className="text-2xl font-semibold text-gray-900">Locations</h1>
-			<p className="text-sm text-gray-600">
-				Where devices are kept: a room, a cabinet, a shelf.
-			</p>
+			<h1 className="text-2xl font-semibold text-gray-900">
+				{t.locations.title}
+			</h1>
+			<p className="text-sm text-gray-600">{t.locations.intro}</p>
 			<Form method="post" className="card flex gap-2">
 				<input
 					name="name"
 					required
-					placeholder="e.g. QA cabinet A"
-					aria-label="New location"
+					placeholder={t.locations.placeholder}
+					aria-label={t.locations.newLabel}
 					className="input"
 				/>
 				<button type="submit" disabled={busy} className="btn-primary shrink-0">
-					Add
+					{t.locations.add}
 				</button>
 			</Form>
 			{result && 'error' in result && (
@@ -75,7 +77,7 @@ export default function Locations() {
 							<input
 								name="name"
 								defaultValue={location.name}
-								aria-label={`Name of ${location.name}`}
+								aria-label={t.locations.nameOf(location.name)}
 								className="input flex-1"
 							/>
 							<button
@@ -84,7 +86,7 @@ export default function Locations() {
 								value={String(location.isArchived)}
 								className="btn-secondary"
 							>
-								Rename
+								{t.locations.rename}
 							</button>
 							<button
 								type="submit"
@@ -92,7 +94,9 @@ export default function Locations() {
 								value={String(!location.isArchived)}
 								className="btn-secondary"
 							>
-								{location.isArchived ? 'Restore' : 'Archive'}
+								{location.isArchived
+									? t.locations.restore
+									: t.locations.archive}
 							</button>
 						</Form>
 					</li>

@@ -73,8 +73,8 @@ class ImportService(
     private val versionKeys = listOf("system_version", "version", "firmware", "os")
 
     fun import(request: ImportRequestDTO, actor: User): ImportResultDTO {
-        require(request.rows.isNotEmpty()) { "The file has no rows" }
-        require(request.rows.size <= MAX_ROWS) { "Import at most $MAX_ROWS rows at a time" }
+        require(request.rows.isNotEmpty()) { Messages.t("import.noRows") }
+        require(request.rows.size <= MAX_ROWS) { Messages.t("import.tooMany", MAX_ROWS) }
         return transaction.execute { status ->
             val newTypes = mutableListOf<String>()
             val newLocations = mutableListOf<String>()
@@ -107,7 +107,7 @@ class ImportService(
     }
 
     private fun error(row: ImportRowDTO, message: String?) =
-        ImportRowResultDTO(row.line, ImportAction.ERROR, name = row.name, typeName = row.typeName, message = message ?: "Invalid row")
+        ImportRowResultDTO(row.line, ImportAction.ERROR, name = row.name, typeName = row.typeName, message = message ?: Messages.t("import.invalidRow"))
 
     private fun value(text: String?): String? = text?.trim()?.takeIf { it.lowercase() !in emptyValues }
 
@@ -122,15 +122,15 @@ class ImportService(
         row: ImportRowDTO, actor: User, newTypes: MutableList<String>, newLocations: MutableList<String>, seen: MutableSet<String>,
     ): ImportRowResultDTO {
         val key = row.externalId?.let { "id:$it" } ?: row.serialNumber?.let { "sn:${it.uppercase()}" }
-        if (key != null && !seen.add(key)) throw IllegalArgumentException("Another row has the same ${if (row.externalId != null) "ID" else "serial number"}")
-        val model = row.model ?: row.name ?: throw IllegalArgumentException("The row has no model nor name")
+        if (key != null && !seen.add(key)) throw IllegalArgumentException(Messages.t(if (row.externalId != null) "import.sameId" else "import.sameSerial"))
+        val model = row.model ?: row.name ?: throw IllegalArgumentException(Messages.t("import.noModel"))
 
         val existing = row.externalId?.let { deviceRepository.findByExternalId(it) }
             ?: row.serialNumber?.let { deviceRepository.findBySerialNumberIgnoreCase(it) }
 
         val type = existing?.type ?: resolveType(row.typeName, newTypes)
         if (existing != null && row.typeName != null && !sameType(existing.type, row.typeName)) {
-            throw IllegalArgumentException("${existing.assetTag} is a ${existing.type.name}, not a ${row.typeName}")
+            throw IllegalArgumentException(Messages.t("import.otherType", existing.assetTag, existing.type.name, row.typeName))
         }
         val location = row.location?.let { resolveLocation(it, newLocations) }
 
@@ -139,10 +139,10 @@ class ImportService(
         val extraNotes = mutableListOf<String>()
         row.version?.let { version ->
             val key = type.coverageField ?: versionKeys.firstOrNull { k -> type.fields.any { it.key == k } }
-            if (key != null) fields[key] = version else extraNotes += "Version: $version"
+            if (key != null) fields[key] = version else extraNotes += Messages.t("import.versionNote", version)
         }
         row.accessories?.let { accessories ->
-            if (type.fields.any { it.key == "accessories" }) fields["accessories"] = accessories else extraNotes += "Accessories: $accessories"
+            if (type.fields.any { it.key == "accessories" }) fields["accessories"] = accessories else extraNotes += Messages.t("import.accessoriesNote", accessories)
         }
         val notes = listOfNotNull(row.notes ?: existing?.notes).plus(extraNotes.filter { existing?.notes?.contains(it) != true })
             .joinToString("\n").ifBlank { null }
@@ -174,7 +174,7 @@ class ImportService(
         if (changed.isEmpty()) return ImportRowResultDTO(row.line, ImportAction.UNCHANGED, existing.assetTag, existing.name, type.name)
         existing.updatedAt = Instant.now()
         deviceService.record(existing, DeviceEventKind.IMPORTED, actor, details = mapOf("changed" to changed.sorted()))
-        return ImportRowResultDTO(row.line, ImportAction.UPDATE, existing.assetTag, existing.name, type.name, "Changes: ${changed.sorted().joinToString()}")
+        return ImportRowResultDTO(row.line, ImportAction.UPDATE, existing.assetTag, existing.name, type.name, Messages.t("import.changes", changed.sorted().joinToString()))
     }
 
     private fun normalized(name: String) = name.trim().lowercase().removeSuffix("s")
@@ -182,7 +182,7 @@ class ImportService(
     private fun sameType(type: DeviceType, name: String) = normalized(type.name) == normalized(name)
 
     private fun resolveType(name: String?, newTypes: MutableList<String>): DeviceType {
-        val typeName = name ?: throw IllegalArgumentException("The row has no type")
+        val typeName = name ?: throw IllegalArgumentException(Messages.t("import.noType"))
         typeRepository.findAll().firstOrNull { sameType(it, typeName) }?.let { return it }
         val created = typeRepository.save(DeviceType(
             name = typeName.trim(),

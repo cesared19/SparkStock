@@ -58,7 +58,7 @@ class CoverageService(
     private val properties: SparkStockProperties,
 ) {
     private fun token(): String = properties.integration.token.ifBlank {
-        throw NotConfiguredException("The coverage matrix needs STOCK_INTEGRATION_TOKEN, the same secret as in SparkyTC")
+        throw NotConfiguredException(Messages.t("coverage.needsToken"))
     }
 
     fun projects(): List<SparkyTCProject> = sparkyTC.projects(token())
@@ -71,19 +71,19 @@ class CoverageService(
         val project = request.projectCode.trim().uppercase()
         val model = request.model.trim()
         val version = request.version?.trim()?.takeIf(String::isNotEmpty)
-        require(project.isNotEmpty()) { "Choose a project" }
-        require(model.isNotEmpty() && model.length <= 200) { "Enter the model, e.g. Focus 3" }
-        require(version == null || version.length <= 200) { "The version is too long" }
+        require(project.isNotEmpty()) { Messages.t("coverage.chooseProject") }
+        require(model.isNotEmpty() && model.length <= 200) { Messages.t("coverage.enterModel") }
+        require(version == null || version.length <= 200) { Messages.t("coverage.versionTooLong") }
         val existing = targetRepository.findAllByProjectCodeIgnoreCaseOrderByModelAscVersionAsc(project)
         if (existing.any { it.model.equals(model, true) && (it.version ?: "").equals(version ?: "", true) }) {
-            throw ConflictException("$model${version?.let { " $it" } ?: ""} is already a target of $project")
+            throw ConflictException(Messages.t("coverage.targetExists", model + (version?.let { " $it" } ?: ""), project))
         }
         return CoverageTargetDTO.of(targetRepository.save(CoverageTarget(projectCode = project, model = model, version = version)))
     }
 
     @Transactional
     fun deleteTarget(id: Long) {
-        val target = targetRepository.findById(id).orElseThrow { NotFoundException("Target not found") }
+        val target = targetRepository.findById(id).orElseThrow { NotFoundException(Messages.t("coverage.targetNotFound")) }
         targetRepository.delete(target)
     }
 

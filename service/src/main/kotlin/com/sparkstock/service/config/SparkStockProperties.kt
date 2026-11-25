@@ -20,7 +20,12 @@ data class SparkStockProperties(
 
     data class Integration(val token: String = "")
 
-    data class Loans(val defaultDays: Long = 7, val maxDays: Long = 90)
+    data class Loans(
+        val defaultDays: Long = 7,
+        val maxDays: Long = 90,
+        // overdue loans older than this many days are also reported to the admins
+        val escalateAfterDays: Long = 3,
+    )
 
     data class Warranty(val warningDays: Long = 30)
 

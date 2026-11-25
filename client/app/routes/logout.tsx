@@ -6,7 +6,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	const token = await getSessionToken(request)
 	if (token) {
 		await apiRequest('/auth/logout', { method: 'POST', token }).catch(
-			() => undefined,
+			() => undefined
 		)
 	}
 	return destroySession(request)

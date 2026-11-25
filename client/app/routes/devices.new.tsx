@@ -6,6 +6,7 @@ import {
 import { useActionData, useLoaderData } from '@remix-run/react'
 import DeviceForm, { readDeviceForm } from '~/components/DeviceForm'
 import type { DeviceDetail, DeviceType, Location } from '~/models/types'
+import { useT } from '~/i18n'
 import { attempt, requireAdmin } from '~/utility/API.server'
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -26,11 +27,14 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function NewDevice() {
+	const t = useT()
 	const { types, locations } = useLoaderData<typeof loader>()
 	const result = useActionData<typeof action>()
 	return (
 		<main className="mx-auto max-w-3xl space-y-4 p-4">
-			<h1 className="text-2xl font-semibold text-gray-900">Add device</h1>
+			<h1 className="text-2xl font-semibold text-gray-900">
+				{t.form.addTitle}
+			</h1>
 			<DeviceForm types={types} locations={locations} error={result?.error} />
 		</main>
 	)

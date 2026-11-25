@@ -13,7 +13,10 @@ import {
 } from '@remix-run/react'
 import { useEffect, useState } from 'react'
 import type { User } from '~/models/types'
+import LanguageSwitch from '~/components/LanguageSwitch'
+import { useLang, useT } from '~/i18n'
 import { requireUser } from '~/utility/API.server'
+import { requestLang } from '~/utility/Language'
 
 import './tailwind.css'
 
@@ -33,8 +36,9 @@ function useSystemTheme() {
 
 export function Layout({ children }: { children: React.ReactNode }) {
 	useSystemTheme()
+	const lang = useLang()
 	return (
-		<html lang="en" suppressHydrationWarning>
+		<html lang={lang} suppressHydrationWarning>
 			<head>
 				{/* eslint-disable-next-line react/no-danger */}
 				<script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
@@ -67,11 +71,12 @@ export function links() {
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
+	const lang = requestLang(request)
 	if (new URL(request.url).pathname === '/login') {
-		return { user: undefined, sparkyTCUrl: '' }
+		return { user: undefined, sparkyTCUrl: '', lang }
 	}
 	const { user } = await requireUser(request)
-	return { user, sparkyTCUrl: process.env.SPARKYTC_PUBLIC_URL ?? '' }
+	return { user, sparkyTCUrl: process.env.SPARKYTC_PUBLIC_URL ?? '', lang }
 }
 
 function TopNavigation({
@@ -81,17 +86,19 @@ function TopNavigation({
 	user: User
 	sparkyTCUrl: string
 }) {
+	const t = useT()
 	const [open, setOpen] = useState(false)
 	const adminItems = [
-		{ to: '/admin/types', label: 'Device types', end: false },
-		{ to: '/admin/locations', label: 'Locations', end: false },
-		{ to: '/admin/import', label: 'Import', end: false },
+		{ to: '/admin/types', label: t.nav.types, end: false },
+		{ to: '/admin/locations', label: t.nav.locations, end: false },
+		{ to: '/admin/import', label: t.nav.import, end: false },
 	]
 	const items = [
-		{ to: '/', label: 'Dashboard', end: true },
-		{ to: '/devices', label: 'Devices', end: false },
-		{ to: '/labels', label: 'Labels', end: false },
-		{ to: '/coverage', label: 'Coverage', end: false },
+		{ to: '/', label: t.nav.dashboard, end: true },
+		{ to: '/devices', label: t.nav.devices, end: false },
+		{ to: '/reports', label: t.nav.reports, end: false },
+		{ to: '/labels', label: t.nav.labels, end: false },
+		{ to: '/coverage', label: t.nav.coverage, end: false },
 		...(user.role === 'ADMIN' ? adminItems : []),
 	]
 	const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -104,9 +111,12 @@ function TopNavigation({
 		<header className="border-b border-gray-200 bg-white">
 			<div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
 				<NavLink to="/" className="text-lg font-bold text-brand-600">
-					SparkStock
+					{t.appName}
 				</NavLink>
-				<nav aria-label="Main" className="hidden flex-1 gap-1 md:flex">
+				<nav
+					aria-label={t.nav.main}
+					className="hidden flex-1 flex-wrap gap-1 lg:flex"
+				>
 					{items.map((item) => (
 						<NavLink
 							key={item.to}
@@ -118,7 +128,8 @@ function TopNavigation({
 						</NavLink>
 					))}
 				</nav>
-				<div className="ml-auto hidden items-center gap-3 md:flex">
+				<div className="ml-auto hidden items-center gap-3 lg:flex">
+					<LanguageSwitch />
 					{sparkyTCUrl && (
 						<a
 							href={sparkyTCUrl}
@@ -130,7 +141,7 @@ function TopNavigation({
 					<span className="text-sm text-gray-700">
 						{user.displayName}
 						{user.role === 'ADMIN' && (
-							<span className="ml-1 text-xs text-gray-500">(admin)</span>
+							<span className="ml-1 text-xs text-gray-500">{t.nav.admin}</span>
 						)}
 					</span>
 					<Form method="post" action="/logout">
@@ -138,25 +149,25 @@ function TopNavigation({
 							type="submit"
 							className="text-sm text-gray-600 hover:text-brand-600"
 						>
-							Sign out
+							{t.nav.signOut}
 						</button>
 					</Form>
 				</div>
 				<button
 					type="button"
-					className="ml-auto rounded-md border border-gray-300 px-3 py-1.5 text-sm md:hidden"
+					className="ml-auto rounded-md border border-gray-300 px-3 py-1.5 text-sm lg:hidden"
 					aria-expanded={open}
 					aria-controls="mobile-menu"
 					onClick={() => setOpen(!open)}
 				>
-					Menu
+					{t.nav.menu}
 				</button>
 			</div>
 			{open && (
 				<nav
 					id="mobile-menu"
-					aria-label="Main"
-					className="space-y-1 border-t border-gray-200 px-4 py-3 md:hidden"
+					aria-label={t.nav.main}
+					className="space-y-1 border-t border-gray-200 px-4 py-3 lg:hidden"
 				>
 					{items.map((item) => (
 						<NavLink
@@ -177,11 +188,14 @@ function TopNavigation({
 							SparkyTC
 						</a>
 					)}
-					<Form method="post" action="/logout" className="px-3 py-2">
-						<button type="submit" className="text-sm text-gray-700">
-							Sign out ({user.displayName})
-						</button>
-					</Form>
+					<div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+						<Form method="post" action="/logout">
+							<button type="submit" className="text-sm text-gray-700">
+								{t.nav.signOutAs(user.displayName)}
+							</button>
+						</Form>
+						<LanguageSwitch />
+					</div>
 				</nav>
 			)}
 		</header>
@@ -199,25 +213,26 @@ export default function App() {
 }
 
 export function ErrorBoundary() {
+	const t = useT()
 	const error = useRouteError()
 	const message = isRouteErrorResponse(error)
 		? error.status === 403
-			? 'You do not have permission to view this page.'
+			? t.errors.forbidden
 			: error.status === 404
-			? 'This page or device does not exist.'
+			? t.errors.notFound
 			: `${error.status} ${error.statusText || error.data}`
 		: error instanceof Error
 		? error.message
-		: 'An unexpected error occurred'
+		: t.errors.unexpected
 	return (
 		<div className="flex min-h-screen items-center justify-center p-6">
 			<div className="max-w-md space-y-4 text-center">
 				<h1 className="text-xl font-semibold text-gray-900">
-					Something went wrong
+					{t.errors.title}
 				</h1>
 				<p className="text-sm text-gray-600">{message}</p>
 				<a href="/" className="text-sm text-brand-600 hover:underline">
-					Go to the dashboard
+					{t.errors.home}
 				</a>
 			</div>
 		</div>

@@ -54,22 +54,22 @@ class DeviceService(
         device.location?.name, device.holder?.displayName, device.holder?.username, device.notes, device.projectCode, device.externalId,
     ).plus(device.fields.values.mapNotNull { it?.toString() }).joinToString(" ").lowercase()
 
-    fun get(id: UUID): Device = deviceRepository.findById(id).orElseThrow { NotFoundException("Device not found") }
+    fun get(id: UUID): Device = deviceRepository.findById(id).orElseThrow { NotFoundException(Messages.t("device.notFound")) }
 
     fun getByTag(tag: String): Device = deviceRepository.findByAssetTagIgnoreCase(tag.trim())
-        ?: throw NotFoundException("No device has the tag $tag")
+        ?: throw NotFoundException(Messages.t("device.noTag", tag))
 
     fun events(device: Device): List<DeviceEvent> = eventRepository.findAllByDeviceIdOrderByCreatedAtDescIdDesc(device.id)
 
     @Transactional
     fun create(request: SaveDeviceDTO, actor: User?, kind: DeviceEventKind = DeviceEventKind.CREATED): Device {
-        val typeId = request.typeId ?: throw IllegalArgumentException("Choose a device type")
-        val type = typeRepository.findByIdForUpdate(typeId) ?: throw NotFoundException("Device type not found")
-        require(!type.isArchived) { "${type.name} is archived, new devices can't use it" }
+        val typeId = request.typeId ?: throw IllegalArgumentException(Messages.t("device.chooseType"))
+        val type = typeRepository.findByIdForUpdate(typeId) ?: throw NotFoundException(Messages.t("type.notFound"))
+        require(!type.isArchived) { Messages.t("type.archived", type.name) }
 
         val assetTag = request.assetTag?.trim()?.uppercase()?.takeIf(String::isNotEmpty)?.also { tag ->
-            require(tag.length <= 40 && tag.matches(Regex("^[A-Z0-9][A-Z0-9._-]*$"))) { "Asset tags use letters, digits, '.', '_' and '-'" }
-            if (deviceRepository.findByAssetTagIgnoreCase(tag) != null) throw ConflictException("The tag $tag is already used")
+            require(tag.length <= 40 && tag.matches(Regex("^[A-Z0-9][A-Z0-9._-]*$"))) { Messages.t("device.tagFormat") }
+            if (deviceRepository.findByAssetTagIgnoreCase(tag) != null) throw ConflictException(Messages.t("device.tagUsed", tag))
         } ?: nextTag(type)
 
         val draft = Device(assetTag = assetTag, type = type, name = "", model = "")
@@ -91,7 +91,7 @@ class DeviceService(
     @Transactional
     fun update(id: UUID, request: SaveDeviceDTO, actor: User): Device {
         val device = locked(id)
-        require(request.typeId == null || request.typeId == device.type.id) { "A device's type can't be changed" }
+        require(request.typeId == null || request.typeId == device.type.id) { Messages.t("device.typeFixed") }
         val before = snapshot(device)
         applyDetails(device, request)
         val changes = snapshot(device).filter { (key, value) -> before[key] != value }.keys
@@ -104,15 +104,15 @@ class DeviceService(
 
     internal fun applyDetails(device: Device, request: SaveDeviceDTO) {
         val model = request.model.trim()
-        require(model.isNotEmpty()) { "Enter the model" }
+        require(model.isNotEmpty()) { Messages.t("device.enterModel") }
         val serial = request.serialNumber?.trim()?.takeIf(String::isNotEmpty)
         if (serial != null) {
             deviceRepository.findBySerialNumberIgnoreCase(serial)?.takeIf { it.id != device.id }?.let {
-                throw ConflictException("${it.assetTag} already has the serial number $serial")
+                throw ConflictException(Messages.t("device.serialUsed", it.assetTag, serial))
             }
         }
         if (request.purchaseDate != null && request.warrantyEnd != null) {
-            require(!request.warrantyEnd.isBefore(request.purchaseDate)) { "The warranty can't end before the purchase date" }
+            require(!request.warrantyEnd.isBefore(request.purchaseDate)) { Messages.t("device.warrantyBeforePurchase") }
         }
         device.name = request.name.trim().ifEmpty { model }
         device.manufacturer = request.manufacturer?.trim()?.takeIf(String::isNotEmpty)
@@ -123,7 +123,7 @@ class DeviceService(
         device.warrantyEnd = request.warrantyEnd
         device.notes = request.notes?.trim()?.takeIf(String::isNotEmpty)
         device.projectCode = request.projectCode?.trim()?.uppercase()?.takeIf(String::isNotEmpty)?.also {
-            require(it.length <= 20) { "The project code is too long" }
+            require(it.length <= 20) { Messages.t("device.projectTooLong") }
         }
         device.fields = FieldValues.normalize(device.type.fields, request.fields)
     }
@@ -138,14 +138,14 @@ class DeviceService(
     @Transactional
     fun checkOut(id: UUID, request: CheckOutDTO, actor: User): Device {
         val device = locked(id)
-        if (device.type.usage != DeviceUsage.POOL) throw ConflictException("${device.type.name} devices are assigned by an admin, not lent")
+        if (device.type.usage != DeviceUsage.POOL) throw ConflictException(Messages.t("loan.assignedType", device.type.name))
         if (device.status != DeviceStatus.AVAILABLE) throw ConflictException(unavailableMessage(device))
 
         val now = Instant.now()
         val dueAt = request.dueAt ?: now.plus(Duration.ofDays(properties.loans.defaultDays))
-        require(dueAt.isAfter(now)) { "The return date must be in the future" }
+        require(dueAt.isAfter(now)) { Messages.t("loan.dueInPast") }
         require(!dueAt.isAfter(now.plus(Duration.ofDays(properties.loans.maxDays)))) {
-            "A loan can last ${properties.loans.maxDays} days at most"
+            Messages.t("loan.tooLong", properties.loans.maxDays)
         }
         return hold(device, DeviceStatus.ON_LOAN, actor, actor, dueAt, DeviceEventKind.CHECKED_OUT, request.note)
     }
@@ -154,9 +154,9 @@ class DeviceService(
     @Transactional
     fun checkIn(id: UUID, request: CheckInDTO, actor: User): Device {
         val device = locked(id)
-        if (device.status != DeviceStatus.ON_LOAN) throw ConflictException("${device.assetTag} isn't on loan")
+        if (device.status != DeviceStatus.ON_LOAN) throw ConflictException(Messages.t("loan.notOnLoan", device.assetTag))
         if (device.holder?.id != actor.id && actor.role != UserRole.ADMIN) {
-            throw ForbiddenException("Only ${device.holder?.displayName ?: "the borrower"} or an admin can return ${device.assetTag}")
+            throw ForbiddenException(Messages.t("loan.onlyBorrower", device.holder?.displayName ?: Messages.t("loan.theBorrower"), device.assetTag))
         }
         request.locationId?.let { device.location = catalogService.location(it) }
         return release(device, DeviceStatus.AVAILABLE, actor, DeviceEventKind.CHECKED_IN, request.note)
@@ -166,12 +166,12 @@ class DeviceService(
     @Transactional
     fun assign(id: UUID, request: AssignDTO, actor: User): Device {
         val device = locked(id)
-        if (device.type.usage != DeviceUsage.ASSIGNED) throw ConflictException("${device.type.name} devices are lent, not assigned")
+        if (device.type.usage != DeviceUsage.ASSIGNED) throw ConflictException(Messages.t("assign.lentType", device.type.name))
         if (device.status != DeviceStatus.AVAILABLE && device.status != DeviceStatus.ASSIGNED) throw ConflictException(unavailableMessage(device))
-        val userId = request.userId ?: throw IllegalArgumentException("Choose who gets the device")
-        val person = userRepository.findById(userId).orElseThrow { NotFoundException("User not found") }
-        require(person.isActive) { "${person.displayName}'s account is disabled" }
-        if (device.holder?.id == person.id) throw ConflictException("${device.assetTag} is already assigned to ${person.displayName}")
+        val userId = request.userId ?: throw IllegalArgumentException(Messages.t("assign.choosePerson"))
+        val person = userRepository.findById(userId).orElseThrow { NotFoundException(Messages.t("user.notFound")) }
+        require(person.isActive) { Messages.t("assign.disabled", person.displayName) }
+        if (device.holder?.id == person.id) throw ConflictException(Messages.t("assign.already", device.assetTag, person.displayName))
         if (device.status == DeviceStatus.ASSIGNED) release(device, DeviceStatus.AVAILABLE, actor, DeviceEventKind.UNASSIGNED, request.note)
         return hold(device, DeviceStatus.ASSIGNED, person, actor, null, DeviceEventKind.ASSIGNED, request.note)
     }
@@ -179,7 +179,7 @@ class DeviceService(
     @Transactional
     fun unassign(id: UUID, request: CheckInDTO, actor: User): Device {
         val device = locked(id)
-        if (device.status != DeviceStatus.ASSIGNED) throw ConflictException("${device.assetTag} isn't assigned")
+        if (device.status != DeviceStatus.ASSIGNED) throw ConflictException(Messages.t("assign.notAssigned", device.assetTag))
         request.locationId?.let { device.location = catalogService.location(it) }
         return release(device, DeviceStatus.AVAILABLE, actor, DeviceEventKind.UNASSIGNED, request.note)
     }
@@ -188,9 +188,9 @@ class DeviceService(
     @Transactional
     fun changeStatus(id: UUID, request: ChangeStatusDTO, actor: User): Device {
         val device = locked(id)
-        val status = request.status ?: throw IllegalArgumentException("Choose a status")
-        if (status.isHeld) throw IllegalArgumentException("Use check-out or assign to give a device to someone")
-        if (status == device.status) throw ConflictException("${device.assetTag} is already ${status.name.lowercase().replace('_', ' ')}")
+        val status = request.status ?: throw IllegalArgumentException(Messages.t("status.choose"))
+        if (status.isHeld) throw IllegalArgumentException(Messages.t("status.useFlows"))
+        if (status == device.status) throw ConflictException(Messages.t("status.already", device.assetTag, Messages.status(status)))
         if (device.status.isHeld) {
             // e.g. a loaned headset that broke: the loan ends and the event remembers who had it
             return release(device, status, actor, DeviceEventKind.STATUS_CHANGED, request.note)
@@ -229,13 +229,13 @@ class DeviceService(
     }
 
     private fun unavailableMessage(device: Device): String = when (device.status) {
-        DeviceStatus.ON_LOAN -> "${device.assetTag} is on loan to ${device.holder?.displayName}" +
-            (device.dueAt?.let { " until ${LocalDate.ofInstant(it, java.time.ZoneOffset.UTC)}" } ?: "")
-        DeviceStatus.ASSIGNED -> "${device.assetTag} is assigned to ${device.holder?.displayName}"
-        else -> "${device.assetTag} is ${device.status.name.lowercase().replace('_', ' ')}"
+        DeviceStatus.ON_LOAN -> Messages.t("unavailable.onLoan", device.assetTag, device.holder?.displayName) +
+            (device.dueAt?.let { Messages.t("unavailable.until", LocalDate.ofInstant(it, java.time.ZoneId.systemDefault())) } ?: "")
+        DeviceStatus.ASSIGNED -> Messages.t("unavailable.assigned", device.assetTag, device.holder?.displayName)
+        else -> Messages.t("unavailable.other", device.assetTag, Messages.status(device.status))
     }
 
-    private fun locked(id: UUID): Device = deviceRepository.findByIdForUpdate(id).orElseThrow { NotFoundException("Device not found") }
+    private fun locked(id: UUID): Device = deviceRepository.findByIdForUpdate(id).orElseThrow { NotFoundException(Messages.t("device.notFound")) }
 
     internal fun record(
         device: Device, kind: DeviceEventKind, actor: User?, holder: User? = null, fromStatus: DeviceStatus? = null,

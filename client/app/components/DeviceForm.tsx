@@ -1,5 +1,6 @@
 import { Form, useNavigation } from '@remix-run/react'
 import { useState } from 'react'
+import { useT } from '~/i18n'
 import type {
 	Device,
 	DeviceType,
@@ -14,6 +15,7 @@ function FieldInput({
 	field: FieldDefinition
 	value: unknown
 }) {
+	const t = useT()
 	const name = `field.${field.key}`
 	const text = value === undefined || value === null ? '' : String(value)
 	switch (field.kind) {
@@ -26,9 +28,9 @@ function FieldInput({
 					}
 					className="input mt-1"
 				>
-					<option value="">—</option>
-					<option value="true">Yes</option>
-					<option value="false">No</option>
+					<option value="">{t.none}</option>
+					<option value="true">{t.yes}</option>
+					<option value="false">{t.no}</option>
 				</select>
 			)
 		case 'SELECT':
@@ -39,7 +41,7 @@ function FieldInput({
 					required={field.required}
 					className="input mt-1"
 				>
-					<option value="">—</option>
+					<option value="">{t.none}</option>
 					{field.options?.map((option) => (
 						<option key={option}>{option}</option>
 					))}
@@ -89,9 +91,12 @@ export default function DeviceForm({
 	device?: Device
 	error?: string
 }) {
-	const usable = types.filter((t) => !t.isArchived || t.id === device?.type.id)
+	const t = useT()
+	const usable = types.filter(
+		(type) => !type.isArchived || type.id === device?.type.id
+	)
 	const [typeId, setTypeId] = useState(device?.type.id ?? usable[0]?.id)
-	const type = usable.find((t) => t.id === Number(typeId))
+	const type = usable.find((option) => option.id === Number(typeId))
 	const busy = useNavigation().state !== 'idle'
 	const label = 'block text-sm font-medium text-gray-700'
 
@@ -99,7 +104,7 @@ export default function DeviceForm({
 		<Form method="post" className="space-y-6">
 			<section className="card grid gap-4 sm:grid-cols-2">
 				<label className={label}>
-					Type
+					{t.form.type}
 					<select
 						name="typeId"
 						value={typeId}
@@ -107,9 +112,9 @@ export default function DeviceForm({
 						disabled={!!device}
 						className="input mt-1"
 					>
-						{usable.map((t) => (
-							<option key={t.id} value={t.id}>
-								{t.name} ({t.usage === 'POOL' ? 'lent' : 'assigned'})
+						{usable.map((option) => (
+							<option key={option.id} value={option.id}>
+								{option.name} ({t.usage[option.usage]})
 							</option>
 						))}
 					</select>
@@ -119,19 +124,19 @@ export default function DeviceForm({
 				</label>
 				{!device && (
 					<label className={label}>
-						Asset tag
+						{t.form.assetTag}
 						<input
 							name="assetTag"
-							placeholder={type ? `Next ${type.tagPrefix}-NNNN` : ''}
+							placeholder={type ? t.form.nextTag(type.tagPrefix) : ''}
 							className="input mt-1"
 						/>
 						<span className="mt-1 block text-xs font-normal text-gray-500">
-							Leave empty for the next number.
+							{t.form.assetTagHelp}
 						</span>
 					</label>
 				)}
 				<label className={label}>
-					Manufacturer
+					{t.form.manufacturer}
 					<input
 						name="manufacturer"
 						defaultValue={device?.manufacturer ?? ''}
@@ -140,7 +145,7 @@ export default function DeviceForm({
 					/>
 				</label>
 				<label className={label}>
-					Model *
+					{t.form.model}
 					<input
 						name="model"
 						required
@@ -150,16 +155,16 @@ export default function DeviceForm({
 					/>
 				</label>
 				<label className={label}>
-					Name
+					{t.form.name}
 					<input
 						name="name"
 						defaultValue={device?.name ?? ''}
-						placeholder="Same as the model"
+						placeholder={t.form.namePlaceholder}
 						className="input mt-1"
 					/>
 				</label>
 				<label className={label}>
-					Serial number
+					{t.form.serial}
 					<input
 						name="serialNumber"
 						defaultValue={device?.serialNumber ?? ''}
@@ -167,13 +172,13 @@ export default function DeviceForm({
 					/>
 				</label>
 				<label className={label}>
-					Location
+					{t.form.location}
 					<select
 						name="locationId"
 						defaultValue={device?.location?.id ?? ''}
 						className="input mt-1"
 					>
-						<option value="">—</option>
+						<option value="">{t.none}</option>
 						{locations
 							.filter((l) => !l.isArchived || l.id === device?.location?.id)
 							.map((l) => (
@@ -184,16 +189,16 @@ export default function DeviceForm({
 					</select>
 				</label>
 				<label className={label}>
-					Project
+					{t.form.project}
 					<input
 						name="projectCode"
 						defaultValue={device?.projectCode ?? ''}
-						placeholder="SparkyTC project, e.g. VR"
+						placeholder={t.form.projectPlaceholder}
 						className="input mt-1 uppercase"
 					/>
 				</label>
 				<label className={label}>
-					Purchase date
+					{t.form.purchased}
 					<input
 						name="purchaseDate"
 						type="date"
@@ -202,7 +207,7 @@ export default function DeviceForm({
 					/>
 				</label>
 				<label className={label}>
-					Warranty ends
+					{t.form.warrantyEnds}
 					<input
 						name="warrantyEnd"
 						type="date"
@@ -215,7 +220,7 @@ export default function DeviceForm({
 			{type && type.fields.length > 0 && (
 				<section className="card grid gap-4 sm:grid-cols-2" key={type.id}>
 					<h2 className="text-sm font-semibold text-gray-900 sm:col-span-2">
-						{type.name} details
+						{t.form.details(type.name)}
 					</h2>
 					{type.fields.map((field) => (
 						<label key={field.key} className={label}>
@@ -223,7 +228,7 @@ export default function DeviceForm({
 							{field.required && ' *'}
 							{type.coverageField === field.key && (
 								<span className="ml-1 text-xs font-normal text-gray-500">
-									(used for test coverage)
+									{t.form.coverageField}
 								</span>
 							)}
 							<FieldInput field={field} value={device?.fields[field.key]} />
@@ -234,7 +239,7 @@ export default function DeviceForm({
 
 			<section className="card">
 				<label className={label}>
-					Notes
+					{t.form.notes}
 					<textarea
 						name="notes"
 						rows={3}
@@ -253,7 +258,7 @@ export default function DeviceForm({
 				</p>
 			)}
 			<button type="submit" disabled={busy} className="btn-primary">
-				{device ? 'Save changes' : 'Add device'}
+				{device ? t.form.save : t.form.add}
 			</button>
 		</Form>
 	)

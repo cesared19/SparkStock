@@ -23,13 +23,28 @@ devices a tester has (to record the device a test ran on).
   importing the same file again updates instead of duplicating. Unknown types are created as lent types with
   *Firmware / OS* and *Accessories* fields, and `N/A` cells count as empty. Status and holders are never changed.
 - **Project** per device (the SparkyTC project short code, e.g. `VR`), for the coverage matrix later.
+- **Reports** (**Reports**), in the format of [ProDash](https://github.com/cesared19/ProDash): big colour tiles (in
+  stock, on loan now, not returned, in use) and blocks for stock by status and type, loans not returned, time on loan,
+  use and disuse, and the people with the most time on loan. The period is 30 days, 90 days, 6 months, 1 year or
+  everything. **Download PNG** saves the report as an image (1200 px wide, like ProDash's), and each block downloads
+  its data as CSV.
+  - *Not returned*: **Attention** (due today or tomorrow), **Overdue** (past the return date) and **Very overdue** (out
+    more than twice the time asked for), with a bar of how many times the time asked for each loan has been out.
+  - *Time on loan*: loans started, returned and returned late, how long a loan lasts compared with what people ask
+    for, the longest loan and the devices with the most time out.
+  - *Use and disuse*: the share of the period each lent device was on loan, and the ones not lent in the period
+    (with how long ago they last were, or *never lent*).
+  - Loans are rebuilt from each device's history, so the reports also cover the time before they existed.
+- **English or Spanish**, chosen by each person with **ES / EN** in the menu or on the sign-in page and kept in their
+  browser; the first time it follows the browser's language. Pages, reports, labels, the server's messages and the
+  reminders in SparkyTC's bell (in the language each person last used) are translated.
 - **Test coverage** (**Coverage**): for a SparkyTC project and build, which target models (and versions) results were
   recorded on and how they went (*tested, passing*, *tested, with failures* or *not tested*), plus models tested without
   being targets. Admins set each project's targets, picking from the models in stock or typing them; a target without
   version counts any version. Results come from SparkyTC 2.9.0 or later, where testers choose the device of each result.
 - **Reminders in SparkyTC's bell**, every day at 9:00 (`REMINDERS_CRON`, in `TZ`): the borrower of a loan due within a
-  day, the borrower of an overdue loan (every day until it's returned), and every admin about warranties ending within
-  30 days. Each one is sent once (SparkyTC keeps one per reference), so restarts never repeat them; admins can send
+  day, the borrower of an overdue loan (every day until it's returned), every admin once about loans more than
+  `LOAN_ESCALATE_AFTER_DAYS` (3) days late, and every admin about warranties ending within 30 days. Each one is sent once (SparkyTC keeps one per reference), so restarts never repeat them; admins can send
   them right away with `POST /api/v1/reminders/send`. Needs `STOCK_INTEGRATION_TOKEN` (shared with SparkyTC 2.9.0 or
   later) and `PUBLIC_URL` for the links.
 - **Roles from SparkyTC.** SparkyTC admins manage devices, types and locations; testers borrow and return.

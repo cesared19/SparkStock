@@ -7,7 +7,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	const { api } = await requireUser(request)
 	try {
 		const detail = await api.get<DeviceDetail>(
-			`/devices/by-tag/${encodeURIComponent(params.tag ?? '')}`,
+			`/devices/by-tag/${encodeURIComponent(params.tag ?? '')}`
 		)
 		return redirect(`/devices/${detail.device.id}`)
 	} catch (error) {

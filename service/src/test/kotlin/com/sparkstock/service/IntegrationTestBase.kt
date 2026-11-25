@@ -43,7 +43,12 @@ abstract class IntegrationTestBase {
     @Autowired lateinit var mapper: ObjectMapper
     @Autowired lateinit var jdbc: JdbcTemplate
 
-    val mvc: MockMvc by lazy { MockMvcBuilders.webAppContextSetup(context).build() }
+    // with the app's filters, e.g. the language of each request
+    val mvc: MockMvc by lazy {
+        MockMvcBuilders.webAppContextSetup(context)
+            .addFilters<org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder>(context.getBean(com.sparkstock.service.config.LanguageFilter::class.java))
+            .build()
+    }
 
     /** Removes the devices so each test starts from the seeded catalog. */
     fun clearDevices() {

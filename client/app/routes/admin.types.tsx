@@ -9,6 +9,7 @@ import {
 	useNavigation,
 } from '@remix-run/react'
 import { useEffect, useState } from 'react'
+import { useT } from '~/i18n'
 import type {
 	DeviceType,
 	DeviceUsage,
@@ -74,6 +75,7 @@ function keyFrom(label: string) {
 }
 
 export default function DeviceTypes() {
+	const t = useT()
 	const { types } = useLoaderData<typeof loader>()
 	const result = useActionData<typeof action>()
 	const busy = useNavigation().state !== 'idle'
@@ -87,13 +89,15 @@ export default function DeviceTypes() {
 		draft && setDraft({ ...draft, ...patch })
 	const updateField = (
 		index: number,
-		patch: Partial<Draft['fields'][number]>,
+		patch: Partial<Draft['fields'][number]>
 	) => {
 		if (!draft) return
-		const fields = draft.fields.map((f, i) =>
-			i === index ? { ...f, ...patch } : f,
-		)
-		setDraft({ ...draft, fields })
+		setDraft({
+			...draft,
+			fields: draft.fields.map((f, i) =>
+				i === index ? { ...f, ...patch } : f
+			),
+		})
 	}
 	const payload = draft && {
 		name: draft.name,
@@ -112,38 +116,47 @@ export default function DeviceTypes() {
 					: undefined,
 		})),
 	}
+	const savedKeys = new Set(
+		types.find((type) => type.id === draft?.id)?.fields.map((f) => f.key) ?? []
+	)
 
 	return (
 		<main className="mx-auto max-w-6xl space-y-4 p-4">
 			<div className="flex items-center justify-between">
-				<h1 className="text-2xl font-semibold text-gray-900">Device types</h1>
+				<h1 className="text-2xl font-semibold text-gray-900">
+					{t.types.title}
+				</h1>
 				<button
 					type="button"
 					className="btn-primary"
 					onClick={() => setDraft(toDraft())}
 				>
-					New type
+					{t.types.new}
 				</button>
 			</div>
 			<div className="grid gap-4 lg:grid-cols-3">
 				<ul className="card divide-y divide-gray-100 self-start">
-					{types.map((t) => (
-						<li key={t.id}>
+					{types.map((type) => (
+						<li key={type.id}>
 							<button
 								type="button"
-								onClick={() => setDraft(toDraft(t))}
-								className={`w-full py-2 text-left text-sm ${draft?.id === t.id ? 'font-semibold text-brand-700' : 'text-gray-800'}`}
+								onClick={() => setDraft(toDraft(type))}
+								className={`w-full py-2 text-left text-sm ${
+									draft?.id === type.id
+										? 'font-semibold text-brand-700'
+										: 'text-gray-800'
+								}`}
 							>
-								{t.name}{' '}
+								{type.name}{' '}
 								<span className="font-mono text-xs text-gray-500">
-									{t.tagPrefix}
+									{type.tagPrefix}
 								</span>
 								<span className="block text-xs text-gray-500">
-									{t.usage === 'POOL'
-										? 'Lent to testers'
-										: 'Assigned by admins'}{' '}
-									· {t.fields.length} fields
-									{t.isArchived && ' · archived'}
+									{type.usage === 'POOL'
+										? t.types.lentHint
+										: t.types.assignedHint}{' '}
+									· {t.types.fieldCount(type.fields.length)}
+									{type.isArchived && ` · ${t.types.archived}`}
 								</span>
 							</button>
 						</li>
@@ -164,7 +177,7 @@ export default function DeviceTypes() {
 						/>
 						<div className="grid gap-3 sm:grid-cols-3">
 							<label className="text-sm text-gray-700">
-								Name
+								{t.types.name}
 								<input
 									value={draft.name}
 									onChange={(e) => update({ name: e.target.value })}
@@ -173,7 +186,7 @@ export default function DeviceTypes() {
 								/>
 							</label>
 							<label className="text-sm text-gray-700">
-								Tag prefix
+								{t.types.prefix}
 								<input
 									value={draft.tagPrefix}
 									onChange={(e) =>
@@ -185,7 +198,7 @@ export default function DeviceTypes() {
 								/>
 							</label>
 							<label className="text-sm text-gray-700">
-								How it&apos;s used
+								{t.types.usage}
 								<select
 									value={draft.usage}
 									onChange={(e) =>
@@ -193,17 +206,15 @@ export default function DeviceTypes() {
 									}
 									className="input mt-1"
 								>
-									<option value="POOL">Lent (testers check out)</option>
-									<option value="ASSIGNED">
-										Assigned (admins give it to a person)
-									</option>
+									<option value="POOL">{t.types.usagePool}</option>
+									<option value="ASSIGNED">{t.types.usageAssigned}</option>
 								</select>
 							</label>
 						</div>
 
 						<fieldset className="space-y-2">
 							<legend className="text-sm font-semibold text-gray-900">
-								Extra fields
+								{t.types.fields}
 							</legend>
 							{draft.fields.map((field, index) => (
 								<div
@@ -211,16 +222,14 @@ export default function DeviceTypes() {
 									className="grid gap-2 rounded-md border border-gray-200 p-2 sm:grid-cols-12"
 								>
 									<input
-										aria-label="Label"
-										placeholder="Label"
+										aria-label={t.types.label}
+										placeholder={t.types.label}
 										value={field.label}
 										onChange={(e) =>
 											updateField(index, {
 												label: e.target.value,
 												// new fields take their key from the label until saved
-												...(types
-													.find((t) => t.id === draft.id)
-													?.fields.some((f) => f.key === field.key)
+												...(savedKeys.has(field.key)
 													? {}
 													: { key: keyFrom(e.target.value) }),
 											})
@@ -228,21 +237,25 @@ export default function DeviceTypes() {
 										className="input sm:col-span-4"
 									/>
 									<select
-										aria-label="Kind"
+										aria-label={t.types.kind}
 										value={field.kind}
 										onChange={(e) =>
 											updateField(index, { kind: e.target.value as FieldKind })
 										}
 										className="input sm:col-span-2"
 									>
-										{KINDS.map((k) => (
-											<option key={k}>{k}</option>
+										{KINDS.map((kind) => (
+											<option key={kind} value={kind}>
+												{t.types.kinds[kind]}
+											</option>
 										))}
 									</select>
 									<input
-										aria-label="Options"
+										aria-label={t.types.options}
 										placeholder={
-											field.kind === 'SELECT' ? 'Options, comma separated' : '—'
+											field.kind === 'SELECT'
+												? t.types.optionsPlaceholder
+												: t.none
 										}
 										disabled={field.kind !== 'SELECT'}
 										value={field.optionsText}
@@ -259,11 +272,11 @@ export default function DeviceTypes() {
 												updateField(index, { required: e.target.checked })
 											}
 										/>
-										Required
+										{t.types.required}
 									</label>
 									<button
 										type="button"
-										aria-label={`Remove ${field.label || 'field'}`}
+										aria-label={t.types.remove(field.label)}
 										onClick={() =>
 											setDraft({
 												...draft,
@@ -272,10 +285,10 @@ export default function DeviceTypes() {
 										}
 										className="text-sm text-red-600 hover:text-red-700 sm:col-span-1"
 									>
-										Remove
+										{t.types.removeShort}
 									</button>
 									<span className="font-mono text-xs text-gray-500 sm:col-span-12">
-										key: {field.key || '—'}
+										{t.types.key}: {field.key || t.none}
 									</span>
 								</div>
 							))}
@@ -298,19 +311,19 @@ export default function DeviceTypes() {
 									})
 								}
 							>
-								Add field
+								{t.types.addField}
 							</button>
 						</fieldset>
 
 						<div className="grid gap-3 sm:grid-cols-2">
 							<label className="text-sm text-gray-700">
-								Version field for test coverage
+								{t.types.coverageField}
 								<select
 									value={draft.coverageField}
 									onChange={(e) => update({ coverageField: e.target.value })}
 									className="input mt-1"
 								>
-									<option value="">None</option>
+									<option value="">{t.types.noneField}</option>
 									{draft.fields
 										.filter((f) => f.key)
 										.map((f) => (
@@ -327,7 +340,7 @@ export default function DeviceTypes() {
 										checked={draft.isArchived}
 										onChange={(e) => update({ isArchived: e.target.checked })}
 									/>
-									Archived (no new devices of this type)
+									{t.types.archivedCheck}
 								</label>
 							)}
 						</div>
@@ -345,11 +358,11 @@ export default function DeviceTypes() {
 								role="status"
 								className="rounded-md bg-green-50 p-3 text-sm text-green-700"
 							>
-								Saved.
+								{t.saved}
 							</p>
 						)}
 						<button type="submit" disabled={busy} className="btn-primary">
-							{draft.id ? 'Save type' : 'Create type'}
+							{draft.id ? t.types.save : t.types.create}
 						</button>
 					</Form>
 				)}

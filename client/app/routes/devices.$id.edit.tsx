@@ -6,6 +6,7 @@ import {
 import { Link, useActionData, useLoaderData } from '@remix-run/react'
 import DeviceForm, { readDeviceForm } from '~/components/DeviceForm'
 import type { DeviceDetail, DeviceType, Location } from '~/models/types'
+import { useT } from '~/i18n'
 import { attempt, requireAdmin } from '~/utility/API.server'
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -22,13 +23,14 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	const { api } = await requireAdmin(request)
 	const body = readDeviceForm(await request.formData())
 	const result = await attempt(() =>
-		api.put<DeviceDetail>(`/devices/${params.id}`, body),
+		api.put<DeviceDetail>(`/devices/${params.id}`, body)
 	)
 	if ('error' in result) return result
 	return redirect(`/devices/${params.id}`)
 }
 
 export default function EditDevice() {
+	const t = useT()
 	const { device, types, locations } = useLoaderData<typeof loader>()
 	const result = useActionData<typeof action>()
 	return (
@@ -40,7 +42,7 @@ export default function EditDevice() {
 				← {device.assetTag}
 			</Link>
 			<h1 className="text-2xl font-semibold text-gray-900">
-				Edit {device.assetTag}
+				{t.form.editTitle(device.assetTag)}
 			</h1>
 			<DeviceForm
 				types={types}

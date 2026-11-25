@@ -8,6 +8,8 @@ import com.sparkstock.service.models.UserRole
 import com.sparkstock.service.services.AuthService
 import com.sparkstock.service.services.ConflictException
 import com.sparkstock.service.services.ForbiddenException
+import com.sparkstock.service.services.Lang
+import com.sparkstock.service.services.Messages
 import com.sparkstock.service.services.NotFoundException
 import com.sparkstock.service.sparkytc.SparkyTCUnauthorizedException
 import com.sparkstock.service.sparkytc.SparkyTCUnavailableException
@@ -53,11 +55,11 @@ class AuthenticationInterceptor(
         val token = bearerToken(request)
         val user = token?.let { authService.authenticate(it) }
         if (token == null || user == null) {
-            writeError(objectMapper, response, HttpStatus.UNAUTHORIZED, "Unauthorized", "Your session has expired, sign in again")
+            writeError(objectMapper, response, HttpStatus.UNAUTHORIZED, "Unauthorized", Messages.t("web.sessionExpired"))
             return false
         }
         if (handler is HandlerMethod && handler.hasMethodAnnotation(AdminOnly::class.java) && user.role != UserRole.ADMIN) {
-            writeError(objectMapper, response, HttpStatus.FORBIDDEN, "Forbidden", "Only admins can do this")
+            writeError(objectMapper, response, HttpStatus.FORBIDDEN, "Forbidden", Messages.t("web.adminsOnly"))
             return false
         }
         CurrentUser.set(user, token)
@@ -78,15 +80,29 @@ class IntegrationTokenInterceptor(
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val expected = properties.integration.token
         if (expected.isBlank()) {
-            writeError(objectMapper, response, HttpStatus.SERVICE_UNAVAILABLE, "Unavailable", "The integration API is off: set STOCK_INTEGRATION_TOKEN")
+            writeError(objectMapper, response, HttpStatus.SERVICE_UNAVAILABLE, "Unavailable", Messages.t("web.integrationOff"))
             return false
         }
         val given = bearerToken(request)
         if (given == null || !MessageDigest.isEqual(given.toByteArray(), expected.toByteArray())) {
-            writeError(objectMapper, response, HttpStatus.UNAUTHORIZED, "Unauthorized", "Send the integration token as Authorization: Bearer <token>")
+            writeError(objectMapper, response, HttpStatus.UNAUTHORIZED, "Unauthorized", Messages.t("web.integrationToken"))
             return false
         }
         return true
+    }
+}
+
+/** Sets the language of each request from its Accept-Language header, for the messages people see. */
+@Component
+@org.springframework.core.annotation.Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
+class LanguageFilter : org.springframework.web.filter.OncePerRequestFilter() {
+    override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, chain: jakarta.servlet.FilterChain) {
+        request.getHeader(HttpHeaders.ACCEPT_LANGUAGE)?.takeIf { it.isNotBlank() }?.let { Messages.set(Lang.parse(it)) }
+        try {
+            chain.doFilter(request, response)
+        } finally {
+            Messages.clear()
+        }
     }
 }
 
@@ -115,7 +131,7 @@ class GlobalExceptionHandler {
     fun validation(ex: IllegalArgumentException) = error(HttpStatus.BAD_REQUEST, "Validation Error", ex.message)
 
     @ExceptionHandler(HttpMessageNotReadableException::class, MethodArgumentTypeMismatchException::class)
-    fun unreadable(ex: Exception) = error(HttpStatus.BAD_REQUEST, "Validation Error", "The request isn't valid JSON, or a value has the wrong type")
+    fun unreadable(ex: Exception) = error(HttpStatus.BAD_REQUEST, "Validation Error", Messages.t("web.badRequest"))
 
     @ExceptionHandler(NotFoundException::class)
     fun notFound(ex: NotFoundException) = error(HttpStatus.NOT_FOUND, "Not Found", ex.message)
@@ -124,7 +140,7 @@ class GlobalExceptionHandler {
     fun conflict(ex: ConflictException) = error(HttpStatus.CONFLICT, "Conflict", ex.message)
 
     @ExceptionHandler(OptimisticLockingFailureException::class)
-    fun stale(ex: OptimisticLockingFailureException) = error(HttpStatus.CONFLICT, "Conflict", "Someone else changed this device at the same time, reload and try again")
+    fun stale(ex: OptimisticLockingFailureException) = error(HttpStatus.CONFLICT, "Conflict", Messages.t("web.stale"))
 
     @ExceptionHandler(com.sparkstock.service.services.NotConfiguredException::class)
     fun notConfigured(ex: Exception) = error(HttpStatus.SERVICE_UNAVAILABLE, "Not configured", ex.message)
@@ -138,6 +154,6 @@ class GlobalExceptionHandler {
     @ExceptionHandler(SparkyTCUnavailableException::class)
     fun unavailable(ex: SparkyTCUnavailableException): ResponseEntity<ErrorResponse> {
         logger.warn("SparkyTC call failed: {}", ex.message, ex.cause)
-        return error(HttpStatus.BAD_GATEWAY, "SparkyTC unavailable", "SparkyTC isn't answering, try again in a moment")
+        return error(HttpStatus.BAD_GATEWAY, "SparkyTC unavailable", Messages.t("web.sparkytcDown"))
     }
 }

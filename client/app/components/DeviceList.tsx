@@ -1,12 +1,15 @@
 import { Link } from '@remix-run/react'
+import { type Dictionary, useT } from '~/i18n'
 import type { Device } from '~/models/types'
 import { formatDate } from '~/utility/Format'
 import StatusBadge from './StatusBadge'
 
-function holderText(device: Device) {
+function holderText(device: Device, t: Dictionary) {
 	if (!device.holder) return device.location?.name ?? ''
 	return device.dueAt
-		? `${device.holder.displayName} · until ${formatDate(device.dueAt)}`
+		? `${device.holder.displayName} · ${t.list.until(
+				formatDate(device.dueAt, t.locale)
+		  )}`
 		: device.holder.displayName
 }
 
@@ -18,6 +21,7 @@ export default function DeviceList({
 	devices: Device[]
 	empty: string
 }) {
+	const t = useT()
 	if (devices.length === 0) {
 		return <p className="py-6 text-center text-sm text-gray-500">{empty}</p>
 	}
@@ -26,11 +30,11 @@ export default function DeviceList({
 			<table className="hidden w-full text-left text-sm md:table">
 				<thead className="border-b border-gray-200 text-xs uppercase text-gray-500">
 					<tr>
-						<th className="py-2 pr-3 font-medium">Tag</th>
-						<th className="py-2 pr-3 font-medium">Device</th>
-						<th className="py-2 pr-3 font-medium">Version</th>
-						<th className="py-2 pr-3 font-medium">Status</th>
-						<th className="py-2 font-medium">With / where</th>
+						<th className="py-2 pr-3 font-medium">{t.list.tag}</th>
+						<th className="py-2 pr-3 font-medium">{t.list.device}</th>
+						<th className="py-2 pr-3 font-medium">{t.list.version}</th>
+						<th className="py-2 pr-3 font-medium">{t.list.status}</th>
+						<th className="py-2 font-medium">{t.list.with}</th>
 					</tr>
 				</thead>
 				<tbody className="divide-y divide-gray-100">
@@ -57,7 +61,7 @@ export default function DeviceList({
 							<td className="py-2 pr-3">
 								<StatusBadge device={device} />
 							</td>
-							<td className="py-2 text-gray-700">{holderText(device)}</td>
+							<td className="py-2 text-gray-700">{holderText(device, t)}</td>
 						</tr>
 					))}
 				</tbody>
@@ -79,7 +83,11 @@ export default function DeviceList({
 								<StatusBadge device={device} />
 							</div>
 							<div className="mt-1 text-xs text-gray-500">
-								{[device.type.name, device.coverageVersion, holderText(device)]
+								{[
+									device.type.name,
+									device.coverageVersion,
+									holderText(device, t),
+								]
 									.filter(Boolean)
 									.join(' · ')}
 							</div>

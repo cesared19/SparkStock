@@ -162,3 +162,72 @@ export interface CoverageMatrix {
 	covered: number
 	targets: number
 }
+
+export type AlertLevel = 'ATTENTION' | 'OVERDUE' | 'VERY_OVERDUE'
+
+export type ReportPeriod = 'D30' | 'D90' | 'D180' | 'D365' | 'ALL'
+
+export interface DeviceRef {
+	id: string
+	assetTag: string
+	name: string
+	model: string
+	type: string
+}
+
+export interface Report {
+	period: ReportPeriod
+	from: Timestamp
+	to: Timestamp
+	stock: {
+		total: number
+		retired: number
+		byStatus: Record<Exclude<DeviceStatus, 'RETIRED'>, number>
+		byType: { typeId: number; name: string; usage: DeviceUsage; total: number; byStatus: Record<string, number> }[]
+		byLocation: { name?: string; count: number }[]
+	}
+	loans: {
+		started: number
+		returned: number
+		returnedLate: number
+		activeNow: number
+		totalHours: number
+		averageHours?: number
+		medianHours?: number
+		averagePlannedHours?: number
+		longest?: { device: DeviceRef; person?: Person; hours: number; active: boolean }
+		byDevice: { device: DeviceRef; loans: number; hours: number }[]
+		byPerson: { person: Person; loans: number; hours: number; returnedLate: number }[]
+	}
+	usage: {
+		devices: {
+			device: DeviceRef
+			utilization: number
+			hours: number
+			loans: number
+			lastLoanAt?: Timestamp
+			unused: boolean
+			status: DeviceStatus
+		}[]
+		averageUtilization?: number
+		used: number
+		unused: number
+	}
+	alerts: {
+		alerts: {
+			device: DeviceRef
+			holder?: Person
+			level: AlertLevel
+			heldSince: Timestamp
+			dueAt: Timestamp
+			heldHours: number
+			plannedHours: number
+			ratio: number
+			overdueHours: number
+		}[]
+		attention: number
+		overdue: number
+		veryOverdue: number
+		escalateAfterDays: number
+	}
+}

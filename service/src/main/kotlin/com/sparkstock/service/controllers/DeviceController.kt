@@ -86,3 +86,13 @@ class ReminderController(private val reminderService: com.sparkstock.service.ser
     @PostMapping("/reminders/send")
     fun send() = DataResponse(data = reminderService.sendReminders())
 }
+
+@RestController
+@RequestMapping("/api/v1")
+class ReportController(private val reportService: com.sparkstock.service.services.ReportService) {
+
+    /** Stock, loan time, use and disuse and non-return alerts; `period` is 30, 90, 180, 365 or all. */
+    @GetMapping("/reports")
+    fun report(@RequestParam(required = false) period: String?) =
+        DataResponse(data = reportService.report(com.sparkstock.service.services.ReportPeriod.parse(period)))
+}

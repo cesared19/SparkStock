@@ -33,10 +33,10 @@ class AuthService(
 
     @Transactional
     fun login(username: String, password: String): LoginResponseDTO {
-        require(username.isNotBlank() && password.isNotEmpty()) { "Enter your SparkyTC username and password" }
+        require(username.isNotBlank() && password.isNotEmpty()) { Messages.t("auth.enterCredentials") }
         val login = sparkyTC.login(username.trim(), password)
-        if (!login.user.isActive) throw SparkyTCUnauthorizedException("This account is disabled")
-        val user = sync(login.user)
+        if (!login.user.isActive) throw SparkyTCUnauthorizedException(Messages.t("auth.disabled"))
+        val user = rememberLanguage(sync(login.user))
         sessions[hash(login.token)] = CachedSession(user.id, Instant.now())
         return LoginResponseDTO(token = login.token, expiresAt = login.expiresAt.toInstant(), user = UserDTO.of(user))
     }
@@ -48,7 +48,7 @@ class AuthService(
         val maxAge = properties.sparkytc.sessionCacheSeconds
         if (cached != null && cached.checkedAt.isAfter(Instant.now().minusSeconds(maxAge))) {
             val user = userRepository.findById(cached.userId).orElse(null)
-            if (user != null && user.isActive) return user
+            if (user != null && user.isActive) return rememberLanguage(user)
         }
         val remote = try {
             sparkyTC.me(token)
@@ -62,7 +62,7 @@ class AuthService(
             return null
         }
         sessions[key] = CachedSession(user.id, Instant.now())
-        return user
+        return rememberLanguage(user)
     }
 
     fun logout(token: String) {
@@ -90,6 +90,14 @@ class AuthService(
         user.role = remote.role
         user.isActive = remote.isActive
         user.syncedAt = Instant.now()
+        return userRepository.save(user)
+    }
+
+    /** Remembers the language the person uses, so their reminders come in it. */
+    private fun rememberLanguage(user: User): User {
+        val requested = Messages.requested() ?: return user
+        if (user.language == requested) return user
+        user.language = requested
         return userRepository.save(user)
     }
 

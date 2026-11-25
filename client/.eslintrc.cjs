@@ -81,4 +81,9 @@ module.exports = {
 			},
 		},
 	],
+
+	// Prettier aligns nested ternaries with spaces after the tabs
+	rules: {
+		'no-mixed-spaces-and-tabs': ['error', 'smart-tabs'],
+	},
 }

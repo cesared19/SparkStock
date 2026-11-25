@@ -2,10 +2,11 @@ import { type LoaderFunctionArgs } from '@remix-run/node'
 import { Form, useLoaderData, useSearchParams } from '@remix-run/react'
 import { useState } from 'react'
 import StatusBadge from '~/components/StatusBadge'
+import { useT } from '~/i18n'
 import type { Device, DeviceType } from '~/models/types'
 import { requireUser } from '~/utility/API.server'
-import { publicURL } from '~/utility/PublicURL.server'
 import { buildLabelsPDF, SHEETS } from '~/utility/Labels'
+import { publicURL } from '~/utility/PublicURL.server'
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const { api } = await requireUser(request)
@@ -23,20 +24,22 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function Labels() {
+	const t = useT()
 	const { devices, types, base } = useLoaderData<typeof loader>()
 	const [params] = useSearchParams()
 	const preselected = new Set(
-		(params.get('ids') ?? '').split(',').filter(Boolean),
+		(params.get('ids') ?? '').split(',').filter(Boolean)
 	)
 	const [selected, setSelected] = useState<Set<string>>(
-		preselected.size > 0 ? preselected : new Set<string>(),
+		preselected.size > 0 ? preselected : new Set<string>()
 	)
 	const [sheetId, setSheetId] = useState(SHEETS[0].id)
 	const [skip, setSkip] = useState(0)
 	const [working, setWorking] = useState(false)
 	const sheet = SHEETS.find((s) => s.id === sheetId) ?? SHEETS[0]
+	const filtered = Boolean(params.get('q') || params.get('typeId'))
 	const shown =
-		preselected.size > 0 && !params.get('q') && !params.get('typeId')
+		preselected.size > 0 && !filtered
 			? devices.filter((d) => preselected.has(d.id))
 			: devices
 
@@ -61,22 +64,22 @@ export default function Labels() {
 					link: `${base}/t/${encodeURIComponent(d.assetTag)}`,
 				}))
 			const doc = await buildLabelsPDF(items, sheet, skip)
-			doc.save(`sparkstock-labels-${new Date().toISOString().slice(0, 10)}.pdf`)
+			doc.save(
+				`${t.labels.fileName}-${new Date().toISOString().slice(0, 10)}.pdf`
+			)
 		} finally {
 			setWorking(false)
 		}
 	}
 
+	const perSheet = sheet.columns * sheet.rows
 	return (
 		<main className="mx-auto max-w-6xl space-y-4 p-4">
-			<h1 className="text-2xl font-semibold text-gray-900">QR labels</h1>
-			<p className="text-sm text-gray-600">
-				Each label links to the device: scan it with the phone&apos;s camera to
-				open it, check it out or return it.
-			</p>
+			<h1 className="text-2xl font-semibold text-gray-900">{t.labels.title}</h1>
+			<p className="text-sm text-gray-600">{t.labels.intro}</p>
 			<section className="card grid gap-3 sm:grid-cols-3">
 				<label className="text-sm text-gray-700 sm:col-span-2">
-					Sheet
+					{t.labels.sheet}
 					<select
 						value={sheetId}
 						onChange={(e) => setSheetId(e.target.value)}
@@ -84,27 +87,21 @@ export default function Labels() {
 					>
 						{SHEETS.map((s) => (
 							<option key={s.id} value={s.id}>
-								{s.name}
+								{t.labels.sheets[s.id] ?? s.name}
 							</option>
 						))}
 					</select>
 				</label>
 				<label className="text-sm text-gray-700">
-					Labels already used on the first sheet
+					{t.labels.used}
 					<input
 						type="number"
 						min={0}
-						max={sheet.columns * sheet.rows - 1}
+						max={perSheet - 1}
 						value={skip}
 						onChange={(e) =>
 							setSkip(
-								Math.max(
-									0,
-									Math.min(
-										sheet.columns * sheet.rows - 1,
-										Number(e.target.value) || 0,
-									),
-								),
+								Math.max(0, Math.min(perSheet - 1, Number(e.target.value) || 0))
 							)
 						}
 						className="input mt-1"
@@ -117,7 +114,7 @@ export default function Labels() {
 						disabled={selected.size === 0 || working}
 						className="btn-primary"
 					>
-						{working ? 'Preparing…' : `Download PDF (${selected.size})`}
+						{working ? t.labels.preparing : t.labels.download(selected.size)}
 					</button>
 					{selected.size > 0 && (
 						<button
@@ -125,7 +122,7 @@ export default function Labels() {
 							onClick={() => setSelected(new Set())}
 							className="btn-secondary"
 						>
-							Clear selection
+							{t.labels.clear}
 						</button>
 					)}
 				</div>
@@ -136,26 +133,26 @@ export default function Labels() {
 					type="search"
 					name="q"
 					defaultValue={params.get('q') ?? ''}
-					placeholder="Search devices"
-					aria-label="Search devices"
+					placeholder={t.labels.search}
+					aria-label={t.labels.search}
 					className="input sm:col-span-2"
 				/>
 				<div className="flex gap-2">
 					<select
 						name="typeId"
 						defaultValue={params.get('typeId') ?? ''}
-						aria-label="Type"
+						aria-label={t.list.type}
 						className="input"
 					>
-						<option value="">All types</option>
-						{types.map((t) => (
-							<option key={t.id} value={t.id}>
-								{t.name}
+						<option value="">{t.list.allTypes}</option>
+						{types.map((type) => (
+							<option key={type.id} value={type.id}>
+								{type.name}
 							</option>
 						))}
 					</select>
 					<button type="submit" className="btn-secondary">
-						Filter
+						{t.labels.filter}
 					</button>
 				</div>
 			</Form>
@@ -168,12 +165,12 @@ export default function Labels() {
 						onChange={() => {
 							const next = new Set(selected)
 							shown.forEach((d) =>
-								allShownSelected ? next.delete(d.id) : next.add(d.id),
+								allShownSelected ? next.delete(d.id) : next.add(d.id)
 							)
 							setSelected(next)
 						}}
 					/>
-					Select all shown ({shown.length})
+					{t.labels.selectAll(shown.length)}
 				</label>
 				<ul className="divide-y divide-gray-100">
 					{shown.map((d) => (

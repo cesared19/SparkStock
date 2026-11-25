@@ -24,4 +24,8 @@ class User(
 
     @Column(name = "synced_at")
     var syncedAt: Instant = Instant.now(),
+
+    // the language they last used SparkStock in, for their reminders
+    @Enumerated(EnumType.STRING)
+    var language: com.sparkstock.service.services.Lang = com.sparkstock.service.services.Lang.EN,
 )

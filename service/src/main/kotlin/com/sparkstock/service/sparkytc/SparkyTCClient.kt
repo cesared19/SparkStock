@@ -8,6 +8,8 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.MediaType
 import org.springframework.http.client.JdkClientHttpRequestFactory
+import com.sparkstock.service.services.Lang
+import com.sparkstock.service.services.Messages
 import org.springframework.stereotype.Component
 import java.net.http.HttpClient
 import java.time.Duration
@@ -169,7 +171,14 @@ class SparkyTCClient(builder: RestClient.Builder, properties: SparkStockProperti
                 val message = runCatching {
                     errorReader.readTree(ex.responseBodyAsString).path("message").asText(null)
                 }.getOrNull()
-                throw SparkyTCUnauthorizedException(message ?: "SparkyTC rejected the sign-in")
+                // SparkyTC answers in English; its usual "wrong password" is translated, anything else is said generically
+                val shown = when {
+                    message == null -> Messages.t("auth.rejected")
+                    Messages.lang() == Lang.EN -> message
+                    message.startsWith("Invalid username or password") -> Messages.t("auth.invalid")
+                    else -> Messages.t("auth.rejected")
+                }
+                throw SparkyTCUnauthorizedException(shown)
             }
             throw SparkyTCUnavailableException("SparkyTC answered ${ex.statusCode.value()}", ex)
         } catch (ex: ResourceAccessException) {

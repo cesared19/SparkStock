@@ -1,4 +1,5 @@
 import type { DataResponse, User } from '~/models/types'
+import { type Lang, requestLang } from './Language'
 import { getSessionToken, redirectToLogin } from './Session.server'
 
 export const API_URL = process.env.API_URL ?? 'http://localhost:8080'
@@ -14,7 +15,7 @@ export class APIError extends Error {
 
 export async function apiRequest<T>(
 	path: string,
-	init: { method?: string; body?: unknown; token?: string } = {}
+	init: { method?: string; body?: unknown; token?: string; lang?: Lang } = {}
 ): Promise<T> {
 	let response: Response
 	try {
@@ -23,6 +24,8 @@ export async function apiRequest<T>(
 			headers: {
 				'Content-Type': 'application/json',
 				...(init.token ? { Authorization: `Bearer ${init.token}` } : {}),
+				// the backend answers its messages in the person's language
+				...(init.lang ? { 'Accept-Language': init.lang } : {}),
 			},
 			body: init.body === undefined ? undefined : JSON.stringify(init.body),
 		})
@@ -47,7 +50,11 @@ export async function apiRequest<T>(
 
 /** The API bound to the signed-in user's session; an expired session sends the user to the login page. */
 export class API {
-	constructor(private request: Request, public token: string) {}
+	public lang: Lang
+
+	constructor(private request: Request, public token: string) {
+		this.lang = requestLang(request)
+	}
 
 	private async call<T>(
 		path: string,
@@ -55,7 +62,7 @@ export class API {
 		body?: unknown
 	): Promise<T> {
 		try {
-			return await apiRequest<T>(path, { method, body, token: this.token })
+			return await apiRequest<T>(path, { method, body, token: this.token, lang: this.lang })
 		} catch (error) {
 			if (error instanceof UnauthorizedError)
 				throw await redirectToLogin(this.request)

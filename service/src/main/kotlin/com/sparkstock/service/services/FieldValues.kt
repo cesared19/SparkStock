@@ -13,11 +13,11 @@ object FieldValues {
         val seen = mutableSetOf<String>()
         return fields.map { field ->
             val key = field.key.trim()
-            require(KEY.matches(key)) { "Field key \"$key\" must be lowercase letters, digits or _ and start with a letter" }
-            require(seen.add(key)) { "Field key \"$key\" is used twice" }
-            require(field.label.isNotBlank()) { "Field \"$key\" needs a label" }
+            require(KEY.matches(key)) { Messages.t("field.keyFormat", key) }
+            require(seen.add(key)) { Messages.t("field.keyTwice", key) }
+            require(field.label.isNotBlank()) { Messages.t("field.needsLabel", key) }
             val options = field.options?.map(String::trim)?.filter(String::isNotEmpty)?.distinct()
-            if (field.kind == FieldKind.SELECT) require(!options.isNullOrEmpty()) { "Field \"${field.label}\" needs at least one option" }
+            if (field.kind == FieldKind.SELECT) require(!options.isNullOrEmpty()) { Messages.t("field.needsOption", field.label) }
             field.copy(key = key, label = field.label.trim(), options = if (field.kind == FieldKind.SELECT) options else null)
         }
     }
@@ -28,7 +28,7 @@ object FieldValues {
         for (field in definitions) {
             val value = convert(field, values[field.key])
             if (value == null) {
-                require(!field.required) { "${field.label} is required" }
+                require(!field.required) { Messages.t("field.required", field.label) }
                 continue
             }
             result[field.key] = value
@@ -41,24 +41,24 @@ object FieldValues {
         val text = raw.toString().trim()
         if (text.isEmpty()) return null
         return when (field.kind) {
-            FieldKind.TEXT -> text.also { require(it.length <= 2000) { "${field.label} is too long" } }
+            FieldKind.TEXT -> text.also { require(it.length <= 2000) { Messages.t("field.tooLong", field.label) } }
             FieldKind.NUMBER -> (raw as? Number)?.toDouble() ?: text.replace(',', '.').toDoubleOrNull()
-                ?: throw IllegalArgumentException("${field.label} must be a number")
+                ?: throw IllegalArgumentException(Messages.t("field.number", field.label))
             FieldKind.BOOLEAN -> when (raw) {
                 is Boolean -> raw
                 else -> when (text.lowercase()) {
                     "true", "yes", "y", "1", "sí", "si", "x" -> true
                     "false", "no", "n", "0" -> false
-                    else -> throw IllegalArgumentException("${field.label} must be yes or no")
+                    else -> throw IllegalArgumentException(Messages.t("field.boolean", field.label))
                 }
             }
             FieldKind.DATE -> try {
                 LocalDate.parse(text).toString()
             } catch (_: DateTimeParseException) {
-                throw IllegalArgumentException("${field.label} must be a date (YYYY-MM-DD)")
+                throw IllegalArgumentException(Messages.t("field.date", field.label))
             }
             FieldKind.SELECT -> field.options.orEmpty().firstOrNull { it.equals(text, ignoreCase = true) }
-                ?: throw IllegalArgumentException("${field.label} must be one of: ${field.options.orEmpty().joinToString()}")
+                ?: throw IllegalArgumentException(Messages.t("field.option", field.label, field.options.orEmpty().joinToString()))
         }
     }
 }

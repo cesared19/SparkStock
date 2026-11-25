@@ -10,6 +10,7 @@ import {
 	useSubmit,
 } from '@remix-run/react'
 import { useEffect, useRef } from 'react'
+import { useT } from '~/i18n'
 import type {
 	CoverageMatrix,
 	CoverageRow,
@@ -101,27 +102,27 @@ export async function action({ request }: ActionFunctionArgs) {
 	)
 }
 
-const STATE: Record<CoverageState, { label: string; style: string }> = {
-	PASSING: { label: 'Tested, passing', style: 'bg-green-100 text-green-800' },
-	FAILING: {
-		label: 'Tested, with failures',
-		style: 'bg-yellow-100 text-yellow-800',
-	},
-	MISSING: { label: 'Not tested', style: 'bg-red-100 text-red-800' },
+const STATE_STYLE: Record<CoverageState, string> = {
+	PASSING: 'bg-green-100 text-green-800',
+	FAILING: 'bg-yellow-100 text-yellow-800',
+	MISSING: 'bg-red-100 text-red-800',
 }
 
 function Counts({ row }: { row: CoverageRow }) {
-	if (row.state === 'MISSING') return <span className="text-gray-500">—</span>
+	const t = useT()
+	if (row.state === 'MISSING')
+		return <span className="text-gray-500">{t.none}</span>
 	const parts = [
-		row.passed && `${row.passed} passed`,
-		row.failed && `${row.failed} failed`,
-		row.blocked && `${row.blocked} blocked`,
-		row.skipped && `${row.skipped} skipped`,
+		row.passed && `${row.passed} ${t.coverage.counts.passed}`,
+		row.failed && `${row.failed} ${t.coverage.counts.failed}`,
+		row.blocked && `${row.blocked} ${t.coverage.counts.blocked}`,
+		row.skipped && `${row.skipped} ${t.coverage.counts.skipped}`,
 	].filter(Boolean)
 	return <span>{parts.join(' · ')}</span>
 }
 
 export default function Coverage() {
+	const t = useT()
 	const { user, error, projects, knownModels, matrix, project } =
 		useLoaderData<typeof loader>()
 	const result = useActionData<typeof action>()
@@ -140,11 +141,10 @@ export default function Coverage() {
 	return (
 		<main className="mx-auto max-w-6xl space-y-4 p-4">
 			<div>
-				<h1 className="text-2xl font-semibold text-gray-900">Test coverage</h1>
-				<p className="mt-1 text-sm text-gray-600">
-					Which device models and versions each SparkyTC project was tested on
-					in a build, from the device recorded with each result.
-				</p>
+				<h1 className="text-2xl font-semibold text-gray-900">
+					{t.coverage.title}
+				</h1>
+				<p className="mt-1 text-sm text-gray-600">{t.coverage.intro}</p>
 			</div>
 
 			{error && (
@@ -156,7 +156,7 @@ export default function Coverage() {
 				</p>
 			)}
 			{!error && projects.length === 0 && (
-				<p className="text-sm text-gray-600">SparkyTC has no projects yet.</p>
+				<p className="text-sm text-gray-600">{t.coverage.noProjects}</p>
 			)}
 
 			{project && (
@@ -166,7 +166,7 @@ export default function Coverage() {
 					onChange={(e) => submit(e.currentTarget, { replace: true })}
 				>
 					<label className="text-sm text-gray-700">
-						Project
+						{t.coverage.project}
 						<select
 							name="project"
 							defaultValue={project.projectShortCode}
@@ -180,7 +180,7 @@ export default function Coverage() {
 						</select>
 					</label>
 					<label className="text-sm text-gray-700">
-						Build
+						{t.coverage.build}
 						<select
 							name="build"
 							key={project.projectShortCode}
@@ -189,42 +189,44 @@ export default function Coverage() {
 							className="input mt-1"
 						>
 							{project.builds.length === 0 && (
-								<option value="">No builds yet</option>
+								<option value="">{t.coverage.noBuilds}</option>
 							)}
 							{project.builds.map((build, index) => (
 								<option key={build} value={build}>
 									{build}
-									{index === 0 ? ' (current)' : ''}
+									{index === 0 ? t.coverage.current : ''}
 								</option>
 							))}
 						</select>
 					</label>
 					{project.deviceMode === 'OFF' && (
 						<p className="rounded-md bg-yellow-50 p-2 text-sm text-yellow-800 sm:col-span-2">
-							This project doesn&apos;t record devices yet: turn on{' '}
-							<strong>Devices</strong> in its SparkyTC settings.
+							{t.coverage.devicesOff}
 						</p>
 					)}
 				</Form>
 			)}
 
 			{matrix && (
-				<section className="card space-y-3" aria-label="Targets">
+				<section className="card space-y-3" aria-label={t.coverage.targets}>
 					<div className="flex flex-wrap items-baseline justify-between gap-2">
-						<h2 className="font-semibold text-gray-900">Targets</h2>
+						<h2 className="font-semibold text-gray-900">
+							{t.coverage.targets}
+						</h2>
 						{matrix.targets > 0 && (
 							<p role="status" className="text-sm text-gray-700">
-								{matrix.covered} of {matrix.targets} tested
-								{matrix.build ? ` in build ${matrix.build}` : ''}
+								{t.coverage.tested(
+									matrix.covered,
+									matrix.targets,
+									matrix.build
+								)}
 							</p>
 						)}
 					</div>
 					{targetRows.length === 0 ? (
 						<p className="text-sm text-gray-500">
-							No targets for this project yet.
-							{isAdmin
-								? ' Add the models (and versions) it has to be tested on below.'
-								: ''}
+							{t.coverage.noTargets}
+							{isAdmin ? t.coverage.noTargetsAdmin : ''}
 						</p>
 					) : (
 						<CoverageTable rows={targetRows} isAdmin={isAdmin} busy={busy} />
@@ -242,9 +244,9 @@ export default function Coverage() {
 								value={project.projectShortCode}
 							/>
 							<label className="text-sm text-gray-700 sm:col-span-2">
-								Model in stock
+								{t.coverage.modelInStock}
 								<select name="known" defaultValue="" className="input mt-1">
-									<option value="">Type it instead…</option>
+									<option value="">{t.coverage.typeInstead}</option>
 									{knownModels.map((m) => (
 										<option
 											key={`${m.model}|${m.version ?? ''}`}
@@ -257,24 +259,24 @@ export default function Coverage() {
 								</select>
 							</label>
 							<label className="text-sm text-gray-700">
-								or model
+								{t.coverage.orModel}
 								<input
 									name="model"
-									placeholder="e.g. Focus 3"
+									placeholder={t.coverage.modelPlaceholder}
 									className="input mt-1"
 								/>
 							</label>
 							<label className="text-sm text-gray-700">
-								Version
+								{t.coverage.version}
 								<input
 									name="version"
-									placeholder="Any"
+									placeholder={t.coverage.any}
 									className="input mt-1"
 								/>
 							</label>
 							<label className="flex items-center gap-2 text-sm text-gray-700 sm:col-span-3">
-								<input type="checkbox" name="anyVersion" /> Any version of the
-								model counts
+								<input type="checkbox" name="anyVersion" />{' '}
+								{t.coverage.anyVersion}
 							</label>
 							<button
 								type="submit"
@@ -283,7 +285,7 @@ export default function Coverage() {
 								disabled={busy}
 								className="btn-primary"
 							>
-								Add target
+								{t.coverage.add}
 							</button>
 						</Form>
 					)}
@@ -299,12 +301,11 @@ export default function Coverage() {
 			)}
 
 			{otherRows.length > 0 && (
-				<section className="card space-y-3" aria-label="Also tested">
-					<h2 className="font-semibold text-gray-900">Also tested</h2>
-					<p className="text-sm text-gray-600">
-						Models and versions with results in this build that aren&apos;t
-						targets.
-					</p>
+				<section className="card space-y-3" aria-label={t.coverage.alsoTested}>
+					<h2 className="font-semibold text-gray-900">
+						{t.coverage.alsoTested}
+					</h2>
+					<p className="text-sm text-gray-600">{t.coverage.alsoTestedIntro}</p>
 					<CoverageTable rows={otherRows} isAdmin={false} busy={busy} />
 				</section>
 			)}
@@ -321,6 +322,7 @@ function CoverageTable({
 	isAdmin: boolean
 	busy: boolean
 }) {
+	const t = useT()
 	return (
 		<ul className="divide-y divide-gray-100">
 			{rows.map((row) => (
@@ -331,15 +333,15 @@ function CoverageTable({
 					<span className="min-w-[10rem] font-medium text-gray-900">
 						{row.model}
 						<span className="ml-1 font-normal text-gray-500">
-							{row.version ?? 'any version'}
+							{row.version ?? t.coverage.anyVersionShort}
 						</span>
 					</span>
 					<span
 						className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-							STATE[row.state].style
+							STATE_STYLE[row.state]
 						}`}
 					>
-						{STATE[row.state].label}
+						{t.coverage.states[row.state]}
 					</span>
 					<span className="text-gray-700">
 						<Counts row={row} />
@@ -357,12 +359,12 @@ function CoverageTable({
 								name="intent"
 								value="delete"
 								disabled={busy}
-								aria-label={`Remove the target ${row.model} ${
-									row.version ?? ''
-								}`}
+								aria-label={t.coverage.removeTarget(
+									`${row.model} ${row.version ?? ''}`.trim()
+								)}
 								className="text-xs text-red-600 hover:text-red-700"
 							>
-								Remove
+								{t.coverage.remove}
 							</button>
 						</Form>
 					)}
