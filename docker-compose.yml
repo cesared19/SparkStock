@@ -57,6 +57,8 @@ services:
          LOAN_DEFAULT_DAYS: ${LOAN_DEFAULT_DAYS:-7}
          LOAN_MAX_DAYS: ${LOAN_MAX_DAYS:-90}
          WARRANTY_WARNING_DAYS: ${WARRANTY_WARNING_DAYS:-30}
+         PUBLIC_URL: ${PUBLIC_URL:-}
+         REMINDERS_CRON: ${REMINDERS_CRON:-0 0 9 * * *}
          # caps the JVM at about 300 MB of RAM in total; plenty for a small team
          JAVA_TOOL_OPTIONS: ${STOCK_JAVA_OPTIONS:--Xmx256m -XX:+UseSerialGC}
       # only reachable from the host itself

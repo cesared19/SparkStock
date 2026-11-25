@@ -23,6 +23,11 @@ devices a tester has (to record the device a test ran on).
   importing the same file again updates instead of duplicating. Unknown types are created as lent types with
   *Firmware / OS* and *Accessories* fields, and `N/A` cells count as empty. Status and holders are never changed.
 - **Project** per device (the SparkyTC project short code, e.g. `VR`), for the coverage matrix later.
+- **Reminders in SparkyTC's bell**, every day at 9:00 (`REMINDERS_CRON`, in `TZ`): the borrower of a loan due within a
+  day, the borrower of an overdue loan (every day until it's returned), and every admin about warranties ending within
+  30 days. Each one is sent once (SparkyTC keeps one per reference), so restarts never repeat them; admins can send
+  them right away with `POST /api/v1/reminders/send`. Needs `STOCK_INTEGRATION_TOKEN` (shared with SparkyTC 2.9.0 or
+  later) and `PUBLIC_URL` for the links.
 - **Roles from SparkyTC.** SparkyTC admins manage devices, types and locations; testers borrow and return.
 - Light and dark theme (follows the system), and phone, tablet and desktop layouts.
 

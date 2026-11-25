@@ -18,6 +18,9 @@ object FakeSparkyTC {
     val accounts = ConcurrentHashMap<String, Account>()
     private val sessions = ConcurrentHashMap<String, String>() // token -> username
     var meCalls = 0
+    // notifications sent to /api/system/v1/notifications, by "userID|sourceRef"
+    val notifications = ConcurrentHashMap<String, Map<*, *>>()
+    const val SYSTEM_TOKEN = "test-integration-token"
 
     private val server: HttpServer = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
         createContext("/") { handle(it) }
@@ -42,6 +45,16 @@ object FakeSparkyTC {
         val token = exchange.requestHeaders.getFirst("Authorization")?.removePrefix("Bearer ")
         val account = token?.let { sessions[it] }?.let { accounts[it] }?.takeIf { it.active }
         when {
+            path == "/api/system/v1/notifications" -> {
+                if (token != SYSTEM_TOKEN) {
+                    send(exchange, 401, mapOf("status" to "ERROR", "message" to "Send the suite's integration token"))
+                } else {
+                    val body = mapper.readValue(exchange.requestBody, Map::class.java)
+                    val key = "${body["userID"]}|${body["sourceRef"]}"
+                    val created = notifications.putIfAbsent(key, body) == null
+                    send(exchange, 200, mapOf("status" to "SUCCESS", "data" to mapOf("created" to created)))
+                }
+            }
             path == "/api/v1/auth/login" -> {
                 val body = mapper.readTree(exchange.requestBody)
                 val a = accounts[body.get("username").asText()]

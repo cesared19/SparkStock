@@ -34,6 +34,16 @@ data class SparkyTCLogin(val token: String, val expiresAt: Date, val user: Spark
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SparkyTCEnvelope<T>(val data: T? = null, val message: String? = null)
 
+/** A notification for a SparkyTC user's bell; the same sourceRef is only shown once. */
+data class SparkyTCNotification(
+    val userID: UUID,
+    val title: String,
+    val message: String,
+    val link: String?,
+    val sourceRef: String,
+    val app: String = "SparkStock",
+)
+
 /** SparkyTC rejected the credentials or the session. */
 class SparkyTCUnauthorizedException(message: String) : RuntimeException(message)
 
@@ -87,6 +97,23 @@ class SparkyTCClient(builder: RestClient.Builder, properties: SparkStockProperti
             .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
             .retrieve()
             .body(UserListEnvelope::class.java)?.data
+    }
+
+    /**
+     * Puts a notification in a SparkyTC user's bell (POST /api/system/v1/notifications, with the suite's shared
+     * integration token). Returns whether a new one was created: false when the same sourceRef was already sent, or
+     * the user turned these off.
+     */
+    fun notify(integrationToken: String, notification: SparkyTCNotification): Boolean {
+        val body = call {
+            client.post().uri("/api/system/v1/notifications")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer $integrationToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(notification)
+                .retrieve()
+                .body(String::class.java)
+        }
+        return errorReader.readTree(body).path("data").path("created").asBoolean(false)
     }
 
     private fun <T> call(request: () -> T?): T {

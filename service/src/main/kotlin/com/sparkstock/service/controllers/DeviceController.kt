@@ -76,3 +76,13 @@ class DeviceController(private val deviceService: DeviceService) {
     private fun detail(device: Device) =
         DataResponse(data = DeviceDetailDTO(DeviceDTO.of(device), deviceService.events(device).map(DeviceEventDTO::of)))
 }
+
+@RestController
+@RequestMapping("/api/v1")
+class ReminderController(private val reminderService: com.sparkstock.service.services.ReminderService) {
+
+    /** Sends today's reminders now, instead of waiting for the daily run (it never sends one twice). */
+    @AdminOnly
+    @PostMapping("/reminders/send")
+    fun send() = DataResponse(data = reminderService.sendReminders())
+}
