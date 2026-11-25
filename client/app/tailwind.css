@@ -1,0 +1,210 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* light theme: tailwind's default gray scale */
+:root {
+	--color-gray-50: 249 250 251;
+	--color-gray-100: 243 244 246;
+	--color-gray-200: 229 231 235;
+	--color-gray-300: 209 213 219;
+	--color-gray-400: 156 163 175;
+	--color-gray-500: 107 114 128;
+	--color-gray-600: 75 85 99;
+	--color-gray-700: 55 65 81;
+	--color-gray-800: 31 41 55;
+	--color-gray-900: 17 24 39;
+	--color-gray-950: 3 7 18;
+	--color-page: 255 255 255;
+	--color-surface: 255 255 255;
+
+	/* chart lines for pass and fail rates, checked for color vision deficiencies against the surface */
+	--color-chart-pass: 21 128 61;
+	--color-chart-fail: 248 113 113;
+	--color-chart-skip: 8 145 178;
+	--color-chart-blocked: 124 58 237;
+
+	/* brand: crimson from the logo (#c01c37) */
+	--color-brand-50: 253 242 244;
+	--color-brand-100: 251 228 232;
+	--color-brand-200: 246 196 205;
+	--color-brand-300: 238 150 167;
+	--color-brand-400: 225 92 120;
+	--color-brand-500: 208 53 83;
+	--color-brand-600: 192 28 55;
+	--color-brand-700: 160 21 48;
+	--color-brand-800: 130 20 43;
+	--color-brand-900: 108 20 39;
+	--color-brand-950: 61 7 18;
+}
+
+/*
+ * dark theme: the gray scale is inverted, so text-gray-900 becomes light text and bg-gray-50
+ * becomes a subtle dark fill. White surfaces and the light tinted backgrounds used for
+ * messages and badges are remapped below.
+ */
+.dark {
+	color-scheme: dark;
+	--color-gray-50: 27 33 47;
+	--color-gray-100: 34 42 58;
+	--color-gray-200: 48 58 76;
+	--color-gray-300: 68 79 98;
+	--color-gray-400: 110 119 136;
+	--color-gray-500: 152 161 176;
+	--color-gray-600: 178 186 199;
+	--color-gray-700: 207 212 221;
+	--color-gray-800: 226 229 235;
+	--color-gray-900: 241 243 246;
+	--color-gray-950: 250 251 252;
+	--color-page: 11 15 25;
+	--color-surface: 17 22 34;
+
+	--color-chart-pass: 22 163 74;
+	--color-chart-fail: 185 28 28;
+	--color-chart-skip: 8 145 178;
+	--color-chart-blocked: 139 92 246;
+
+	/* brand: buttons keep the logo crimson, text and tints are lightened for contrast */
+	--color-brand-50: 72 18 30;
+	--color-brand-100: 92 22 37;
+	--color-brand-200: 120 28 47;
+	--color-brand-500: 232 96 122;
+}
+
+/* links and active states use brand-600 text, which needs to be lighter on dark surfaces */
+.dark .text-brand-600,
+.dark .hover\:text-brand-600:hover {
+	color: rgb(240 110 135);
+}
+.dark .text-brand-700,
+.dark .hover\:text-brand-700:hover,
+.dark .hover\:text-brand-800:hover {
+	color: rgb(245 140 160);
+}
+
+body {
+	background-color: rgb(var(--color-page));
+	color: rgb(var(--color-gray-900));
+}
+
+.dark .bg-white,
+.dark .hover\:bg-white:hover,
+.dark .focus\:bg-white:focus {
+	background-color: rgb(var(--color-surface));
+}
+.dark .bg-white\/90 {
+	background-color: rgb(var(--color-surface) / 0.9);
+}
+
+.dark input:not([type='checkbox']):not([type='radio']),
+.dark textarea,
+.dark select {
+	background-color: rgb(var(--color-surface));
+}
+
+/* tinted backgrounds */
+.dark .bg-red-50,
+.dark .bg-red-50\/40,
+.dark .hover\:bg-red-50:hover {
+	background-color: rgb(127 29 29 / 0.28);
+}
+.dark .bg-red-100 {
+	background-color: rgb(153 27 27 / 0.4);
+}
+.dark .bg-green-50,
+.dark .hover\:bg-green-50:hover {
+	background-color: rgb(20 83 45 / 0.3);
+}
+.dark .bg-green-100 {
+	background-color: rgb(22 101 52 / 0.45);
+}
+.dark .bg-yellow-50,
+.dark .hover\:bg-yellow-50:hover {
+	background-color: rgb(113 63 18 / 0.3);
+}
+.dark .bg-yellow-100 {
+	background-color: rgb(133 77 14 / 0.45);
+}
+.dark .bg-cyan-50,
+.dark .hover\:bg-cyan-50:hover {
+	background-color: rgb(22 78 99 / 0.3);
+}
+.dark .bg-cyan-100 {
+	background-color: rgb(21 94 117 / 0.45);
+}
+.dark .bg-violet-50,
+.dark .hover\:bg-violet-50:hover {
+	background-color: rgb(76 29 149 / 0.3);
+}
+.dark .bg-violet-100 {
+	background-color: rgb(91 33 182 / 0.45);
+}
+.dark .bg-blue-100 {
+	background-color: rgb(30 58 138 / 0.45);
+}
+.dark .bg-indigo-100 {
+	background-color: rgb(55 48 163 / 0.45);
+}
+
+/* text on tinted backgrounds and links */
+.dark .text-red-800,
+.dark .text-red-700,
+.dark .hover\:text-red-700:hover,
+.dark .hover\:text-red-800:hover {
+	color: rgb(252 165 165);
+}
+.dark .text-red-600,
+.dark .hover\:text-red-600:hover {
+	color: rgb(248 113 113);
+}
+.dark .text-green-800,
+.dark .text-green-700,
+.dark .hover\:text-green-700:hover {
+	color: rgb(134 239 172);
+}
+.dark .text-yellow-800,
+.dark .hover\:text-yellow-700:hover {
+	color: rgb(253 230 138);
+}
+.dark .text-cyan-800,
+.dark .hover\:text-cyan-700:hover {
+	color: rgb(165 243 252);
+}
+.dark .text-violet-800,
+.dark .hover\:text-violet-700:hover {
+	color: rgb(196 181 253);
+}
+.dark .text-blue-800 {
+	color: rgb(147 197 253);
+}
+.dark .text-indigo-800 {
+	color: rgb(165 180 252);
+}
+.dark .border-red-200,
+.dark .border-red-300 {
+	border-color: rgb(153 27 27 / 0.7);
+}
+
+/* The height of the visible window. 100vh on phones is the height with the
+browser bars hidden, so the app was taller than the screen and the whole page
+scrolled; 100dvh follows the bars. 100vh stays for browsers without dvh. */
+.h-app {
+	height: 100vh;
+	height: 100dvh;
+}
+
+/* SparkStock form controls and buttons */
+@layer components {
+	.input {
+		@apply block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
+	}
+	.btn-primary {
+		@apply inline-flex items-center justify-center rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-60;
+	}
+	.btn-secondary {
+		@apply inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-60;
+	}
+	.card {
+		@apply rounded-lg border border-gray-200 bg-white p-4 shadow-sm;
+	}
+}
