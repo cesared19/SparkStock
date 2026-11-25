@@ -17,6 +17,12 @@ devices a tester has (to record the device a test ran on).
 - **QR labels.** Print a PDF of labels on A4 or Letter adhesive sheets (Avery L7160, L7159 or 5160 layouts), skipping
   the labels already used. A label holds the device's address (`/t/VR-0001`), so the phone's own camera opens it, no
   app or HTTPS needed.
+- **Import from a spreadsheet** (admins, **Import**): a CSV such as the Confluence database exported with
+  *••• → Export → CSV*. Columns are matched by name and can be changed; a preview shows what each row will do before
+  anything is saved, and the import is all or nothing. Rows are matched to devices by ID, then serial number, so
+  importing the same file again updates instead of duplicating. Unknown types are created as lent types with
+  *Firmware / OS* and *Accessories* fields, and `N/A` cells count as empty. Status and holders are never changed.
+- **Project** per device (the SparkyTC project short code, e.g. `VR`), for the coverage matrix later.
 - **Roles from SparkyTC.** SparkyTC admins manage devices, types and locations; testers borrow and return.
 - Light and dark theme (follows the system), and phone, tablet and desktop layouts.
 
@@ -70,6 +76,13 @@ docker compose stop stock-backend
 docker compose run --rm stock-database-backup restore daily/sparkstock-YYYYMMDD-HHMMSS.dump --replace
 docker compose start stock-backend
 ```
+
+## Resources
+
+SparkStock is light: measured with the backend capped at a 256 MB heap (`STOCK_JAVA_OPTIONS`), the backend uses about
+300 MB of RAM and the client about 100 MB, with no CPU while idle (there are no background jobs besides the nightly
+`pg_dump`, a few MB). It answered 500 device-list requests in 2 seconds. It calls SparkyTC once per signed-in person
+every 5 minutes at most (to check the session), and SparkyTC will call it only when someone records a result.
 
 ## Developing
 

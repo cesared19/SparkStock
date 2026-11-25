@@ -184,6 +184,15 @@ export default function DeviceForm({
 					</select>
 				</label>
 				<label className={label}>
+					Project
+					<input
+						name="projectCode"
+						defaultValue={device?.projectCode ?? ''}
+						placeholder="SparkyTC project, e.g. VR"
+						className="input mt-1 uppercase"
+					/>
+				</label>
+				<label className={label}>
 					Purchase date
 					<input
 						name="purchaseDate"
@@ -271,6 +280,7 @@ export function readDeviceForm(form: FormData) {
 		purchaseDate: text('purchaseDate'),
 		warrantyEnd: text('warrantyEnd'),
 		notes: text('notes'),
+		projectCode: text('projectCode'),
 		fields,
 	}
 }

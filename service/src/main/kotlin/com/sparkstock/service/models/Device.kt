@@ -52,6 +52,14 @@ class Device(
 
     var notes: String? = null,
 
+    /** The SparkyTC project the device is for, e.g. VR. */
+    @Column(name = "project_code")
+    var projectCode: String? = null,
+
+    /** Its ID where it was imported from (the Confluence database's ID column). */
+    @Column(name = "external_id")
+    var externalId: String? = null,
+
     @JdbcTypeCode(SqlTypes.JSON)
     var fields: Map<String, Any?> = emptyMap(),
 

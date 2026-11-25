@@ -90,6 +90,7 @@ function TopNavigation({
 			? [
 					{ to: '/admin/types', label: 'Device types', end: false },
 					{ to: '/admin/locations', label: 'Locations', end: false },
+					{ to: '/admin/import', label: 'Import', end: false },
 				]
 			: []),
 	]

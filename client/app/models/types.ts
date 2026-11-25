@@ -81,6 +81,8 @@ export interface Device {
 	purchaseDate?: string
 	warrantyEnd?: string
 	notes?: string
+	projectCode?: string
+	externalId?: string
 	fields: Record<string, string | number | boolean>
 	coverageVersion?: string
 	createdAt: Timestamp

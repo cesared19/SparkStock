@@ -14,6 +14,9 @@ Inventario de dispositivos de la suite de SparkyTC (https://github.com/cesared19
 - **Modelo:** `device_types` (uso `POOL` = se presta, `ASSIGNED` = lo asigna un admin; campos extra en JSONB con `FieldDefinition`; `coverage_field` = el campo de versión para la matriz de cobertura; `next_number` para las etiquetas `<PREFIJO>-0001`), `devices` (campos extra en JSONB, normalizados por `FieldValues`; `holder_id`, `due_at`; `@Version`) y `device_events` (historial, no se edita). Las transiciones están en `DeviceService` y bloquean la fila (`findByIdForUpdate`).
 - **API de integración:** `/api/integration/v1` con `STOCK_INTEGRATION_TOKEN` (`IntegrationTokenInterceptor`), solo lectura, para que SparkyTC liste los dispositivos de un tester (`IntegrationDeviceDTO`, `ref` = asset tag).
 - **Deploy:** `docker-compose.yml` con servicios `stock-*` (para no chocar con los de SparkyTC en la red compartida). `stock-backend` se une a la red de SparkyTC (`SPARKYTC_NETWORK`) y llama a `http://backend-service:8080`. Respaldo antes de cada `up` y diario con los scripts de `deploy/backup` (copiados de SparkyTC).
+- **Importación (desde 0.2.0):** `ImportService` (`POST /api/v1/import/devices`, admins) recibe filas ya mapeadas por el cliente (`routes/admin.import.tsx`, `utility/CSV.ts`; columnas adivinadas por nombre, p. ej. el CSV de la database de Confluence "Testing Devices": ID, Device Name, Model, Brand, Serial Number, Type, Firmware, Attachments, Project Tag). Todo o nada; la vista previa (`dryRun`) corre la misma importación y hace rollback. Empata por `external_id` y luego por serie; los tipos desconocidos se crean como POOL con campos `version` (cobertura) y `accessories`; "N/A" cuenta como vacío. Nunca cambia estado ni quién tiene el equipo.
+- **Proyecto:** `devices.project_code` (código corto del proyecto de SparkyTC, p. ej. VR) y `devices.external_id` (V2).
+- **Recursos:** el backend corre con `-Xmx256m -XX:+UseSerialGC` (`STOCK_JAVA_OPTIONS`): ~300 MB de RAM, sin CPU en reposo.
 - **Etiquetas QR:** el PDF se genera en el navegador (`utility/Labels.ts`, jsPDF + qrcode). El QR lleva `PUBLIC_URL/t/<tag>` (`routes/t.$tag.tsx`), que se abre con la cámara del teléfono, sin HTTPS.
 
 ## Cómo trabajar
@@ -27,5 +30,5 @@ Inventario de dispositivos de la suite de SparkyTC (https://github.com/cesared19
 
 1. SparkyTC: dispositivo por resultado (modo Off/Opcional/Obligatorio por proyecto) usando `/api/integration/v1/devices`.
 2. Avisos (atrasos, garantías) a la campana de SparkyTC.
-3. Confluence Cloud: importar el inventario actual y una página por dispositivo.
+3. Confluence Cloud: una página por dispositivo (la importación por CSV ya existe).
 4. Matriz de cobertura por proyecto y build.

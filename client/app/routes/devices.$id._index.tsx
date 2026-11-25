@@ -339,6 +339,8 @@ export default function DevicePage() {
 							<Detail label="Model">{device.model}</Detail>
 							<Detail label="Serial number">{device.serialNumber}</Detail>
 							<Detail label="Location">{device.location?.name}</Detail>
+							<Detail label="Project">{device.projectCode}</Detail>
+							<Detail label="External ID">{device.externalId}</Detail>
 							<Detail label="Purchased">
 								{formatDate(device.purchaseDate)}
 							</Detail>

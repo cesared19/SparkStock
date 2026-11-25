@@ -22,6 +22,7 @@ interface LocationRepository : JpaRepository<Location, Long> {
 interface DeviceTypeRepository : JpaRepository<DeviceType, Long> {
     fun findAllByOrderByNameAsc(): List<DeviceType>
     fun findByNameIgnoreCase(name: String): DeviceType?
+    fun existsByTagPrefixIgnoreCase(tagPrefix: String): Boolean
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select t from DeviceType t where t.id = :id")
@@ -31,6 +32,7 @@ interface DeviceTypeRepository : JpaRepository<DeviceType, Long> {
 interface DeviceRepository : JpaRepository<Device, UUID> {
     fun findByAssetTagIgnoreCase(assetTag: String): Device?
     fun findBySerialNumberIgnoreCase(serialNumber: String): Device?
+    fun findByExternalId(externalId: String): Device?
     fun findAllByHolderIdOrderByAssetTagAsc(holderId: UUID): List<Device>
     fun findAllByOrderByAssetTagAsc(): List<Device>
 

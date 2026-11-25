@@ -33,3 +33,14 @@ class CatalogController(private val catalogService: CatalogService) {
     fun updateLocation(@PathVariable id: Long, @RequestBody request: SaveLocationDTO) =
         DataResponse(data = LocationDTO.of(catalogService.updateLocation(id, request)))
 }
+
+@RestController
+@RequestMapping("/api/v1")
+class ImportController(private val importService: com.sparkstock.service.services.ImportService) {
+
+    /** Previews (`dryRun: true`, the default) or applies an import of devices from a spreadsheet. */
+    @AdminOnly
+    @PostMapping("/import/devices")
+    fun importDevices(@RequestBody request: com.sparkstock.service.services.ImportRequestDTO) =
+        DataResponse(data = importService.import(request, com.sparkstock.service.auth.CurrentUser.get()))
+}

@@ -51,7 +51,7 @@ class DeviceService(
 
     private fun searchText(device: Device) = listOfNotNull(
         device.assetTag, device.name, device.manufacturer, device.model, device.serialNumber, device.type.name,
-        device.location?.name, device.holder?.displayName, device.holder?.username, device.notes,
+        device.location?.name, device.holder?.displayName, device.holder?.username, device.notes, device.projectCode, device.externalId,
     ).plus(device.fields.values.mapNotNull { it?.toString() }).joinToString(" ").lowercase()
 
     fun get(id: UUID): Device = deviceRepository.findById(id).orElseThrow { NotFoundException("Device not found") }
@@ -72,14 +72,15 @@ class DeviceService(
             if (deviceRepository.findByAssetTagIgnoreCase(tag) != null) throw ConflictException("The tag $tag is already used")
         } ?: nextTag(type)
 
-        val device = Device(assetTag = assetTag, type = type, name = "", model = "")
-        applyDetails(device, request)
-        deviceRepository.save(device)
+        val draft = Device(assetTag = assetTag, type = type, name = "", model = "")
+        applyDetails(draft, request)
+        // the ID is assigned here, so save() merges and returns the managed copy: keep working on that one
+        val device = deviceRepository.save(draft)
         record(device, kind, actor, toStatus = device.status)
         return device
     }
 
-    private fun nextTag(type: DeviceType): String {
+    internal fun nextTag(type: DeviceType): String {
         while (true) {
             val tag = "%s-%04d".format(type.tagPrefix, type.nextNumber)
             type.nextNumber += 1
@@ -101,7 +102,7 @@ class DeviceService(
         return device
     }
 
-    private fun applyDetails(device: Device, request: SaveDeviceDTO) {
+    internal fun applyDetails(device: Device, request: SaveDeviceDTO) {
         val model = request.model.trim()
         require(model.isNotEmpty()) { "Enter the model" }
         val serial = request.serialNumber?.trim()?.takeIf(String::isNotEmpty)
@@ -121,13 +122,16 @@ class DeviceService(
         device.purchaseDate = request.purchaseDate
         device.warrantyEnd = request.warrantyEnd
         device.notes = request.notes?.trim()?.takeIf(String::isNotEmpty)
+        device.projectCode = request.projectCode?.trim()?.uppercase()?.takeIf(String::isNotEmpty)?.also {
+            require(it.length <= 20) { "The project code is too long" }
+        }
         device.fields = FieldValues.normalize(device.type.fields, request.fields)
     }
 
-    private fun snapshot(device: Device): Map<String, Any?> = mapOf(
+    internal fun snapshot(device: Device): Map<String, Any?> = mapOf(
         "name" to device.name, "manufacturer" to device.manufacturer, "model" to device.model,
         "serialNumber" to device.serialNumber, "location" to device.location?.id, "purchaseDate" to device.purchaseDate,
-        "warrantyEnd" to device.warrantyEnd, "notes" to device.notes,
+        "warrantyEnd" to device.warrantyEnd, "notes" to device.notes, "project" to device.projectCode,
     ) + device.type.fields.associate { "fields.${it.key}" to device.fields[it.key] }
 
     /** Anyone takes an available POOL device for themselves, until `dueAt` (by default in LOAN_DEFAULT_DAYS days). */
@@ -233,7 +237,7 @@ class DeviceService(
 
     private fun locked(id: UUID): Device = deviceRepository.findByIdForUpdate(id).orElseThrow { NotFoundException("Device not found") }
 
-    private fun record(
+    internal fun record(
         device: Device, kind: DeviceEventKind, actor: User?, holder: User? = null, fromStatus: DeviceStatus? = null,
         toStatus: DeviceStatus? = null, note: String? = null, details: Map<String, Any?>? = null,
     ) {

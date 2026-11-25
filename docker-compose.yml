@@ -57,6 +57,8 @@ services:
          LOAN_DEFAULT_DAYS: ${LOAN_DEFAULT_DAYS:-7}
          LOAN_MAX_DAYS: ${LOAN_MAX_DAYS:-90}
          WARRANTY_WARNING_DAYS: ${WARRANTY_WARNING_DAYS:-30}
+         # caps the JVM at about 300 MB of RAM in total; plenty for a small team
+         JAVA_TOOL_OPTIONS: ${STOCK_JAVA_OPTIONS:--Xmx256m -XX:+UseSerialGC}
       # only reachable from the host itself
       ports:
          - '127.0.0.1:${STOCK_BACKEND_PORT:-8081}:8080'
