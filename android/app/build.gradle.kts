@@ -23,6 +23,8 @@ android {
         versionName = "1.0.0"
         // phones only (ARM): leaves out the emulator's copies of the QR reader, halving the APK
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+        // only the app's languages, also in Android's per-app language setting
+        resourceConfigurations += listOf("en", "es")
     }
 
     signingConfigs {
