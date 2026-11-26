@@ -48,6 +48,12 @@ interface DeviceRepository : JpaRepository<Device, UUID> {
     fun findWarrantyEndingBefore(until: LocalDate): List<Device>
 }
 
+interface EventPhotoRepository : JpaRepository<EventPhoto, Long> {
+    @Query("select p.id, p.eventId from EventPhoto p where p.eventId in :eventIds order by p.id")
+    fun findIdsByEventIds(eventIds: Collection<Long>): List<Array<Any>>
+    fun countByEventId(eventId: Long): Long
+}
+
 interface DeviceEventRepository : JpaRepository<DeviceEvent, Long> {
     fun findAllByDeviceIdOrderByCreatedAtDescIdDesc(deviceId: UUID): List<DeviceEvent>
 }

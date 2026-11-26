@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SparkStock Scanner</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="back">Back</string>
+    <string name="retry">Try again</string>
+    <string name="done">Done</string>
+    <string name="loading">Loading…</string>
+
+    <!-- setup and sign-in -->
+    <string name="setup_title">Connect to SparkStock</string>
+    <string name="setup_intro">The address you open SparkStock on in the browser, e.g. 192.168.1.20:3100.</string>
+    <string name="server_address">SparkStock address</string>
+    <string name="connect">Connect</string>
+    <string name="invalid_address">That isn\'t a valid address.</string>
+    <string name="cant_reach">SparkStock can\'t be reached at that address. Check the address and that the phone is on the office Wi-Fi.</string>
+    <string name="sign_in_intro">Sign in with your SparkyTC account.</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="sign_in">Sign in</string>
+    <string name="admins_only">This app is for SparkyTC admins (the IT manager). Ask an admin to lend or return devices.</string>
+    <string name="change_server">Change server</string>
+    <string name="sign_out">Sign out</string>
+    <string name="session_expired">Your session expired, sign in again.</string>
+
+    <!-- home -->
+    <string name="hello">Hi, %1$s</string>
+    <string name="lend">Lend</string>
+    <string name="lend_hint">Scan devices and lend them to someone</string>
+    <string name="give_back">Return</string>
+    <string name="give_back_hint">Scan a device someone brings back</string>
+    <string name="inventory">Inventory check</string>
+    <string name="inventory_hint">Scan what\'s in a cabinet or room and compare it with SparkStock</string>
+
+    <!-- camera -->
+    <string name="camera_needed">The camera is needed to scan the QR labels.</string>
+    <string name="allow_camera">Allow the camera</string>
+    <string name="open_settings">Open settings</string>
+    <string name="flashlight">Flashlight</string>
+    <string name="point_camera">Point the camera at a SparkStock label</string>
+    <string name="not_a_label">That QR code isn\'t a SparkStock label.</string>
+    <string name="type_tag">Type a tag</string>
+    <string name="tag_hint">e.g. VR-0001</string>
+    <string name="add">Add</string>
+
+    <!-- lend -->
+    <string name="lend_title">Lend devices</string>
+    <string name="scanned_count">%1$d scanned</string>
+    <string name="nothing_scanned">Scan the devices to lend: the headset, its controllers, the charger…</string>
+    <string name="not_available">Not available: %1$s</string>
+    <string name="remove">Remove</string>
+    <string name="next">Next</string>
+    <string name="choose_person">Who takes them?</string>
+    <string name="search_people">Search people</string>
+    <string name="recent">Recent</string>
+    <string name="everyone">Everyone</string>
+    <string name="return_by">Return by</string>
+    <string name="note">Note (optional)</string>
+    <string name="lend_confirm">Lend %1$d devices to %2$s until %3$s</string>
+    <string name="lent_title">Lent to %1$s</string>
+    <string name="lent_until">Until %1$s</string>
+    <string name="lend_more">Lend more</string>
+    <string name="already_scanned">%1$s is already in the list</string>
+
+    <!-- return -->
+    <string name="return_title">Return devices</string>
+    <string name="on_loan_to">On loan to %1$s</string>
+    <string name="due">Due %1$s</string>
+    <string name="overdue">Overdue</string>
+    <string name="not_on_loan">%1$s isn\'t on loan (%2$s).</string>
+    <string name="how_came_back">How did it come back?</string>
+    <string name="condition_ok">Fine</string>
+    <string name="condition_repair">Needs repair</string>
+    <string name="take_photo">Take a photo</string>
+    <string name="retake_photo">Take it again</string>
+    <string name="confirm_return">Return %1$s</string>
+    <string name="returned">%1$s returned</string>
+    <string name="returned_repair">%1$s returned and sent to repair</string>
+    <string name="photo_failed">The return was saved, but the photo couldn\'t be uploaded: %1$s</string>
+    <string name="scan_next">Scan the next device</string>
+
+    <!-- inventory -->
+    <string name="inventory_title">Inventory check</string>
+    <string name="choose_location">Which location are you checking?</string>
+    <string name="checking">Checking %1$s</string>
+    <string name="finish">Finish (%1$d)</string>
+    <string name="found">Where it should be (%1$d)</string>
+    <string name="missing">Missing (%1$d)</string>
+    <string name="elsewhere">Here, but SparkStock has it somewhere else (%1$d)</string>
+    <string name="unknown">Not in SparkStock (%1$d)</string>
+    <string name="move_here">Move %1$d here</string>
+    <string name="moved">Moved %1$d devices to %2$s.</string>
+    <string name="all_in_place">Everything is where SparkStock says.</string>
+    <string name="with_person">with %1$s</string>
+    <string name="at_location">at %1$s</string>
+    <string name="no_location">no location</string>
+
+    <string name="status_AVAILABLE">available</string>
+    <string name="status_ON_LOAN">on loan</string>
+    <string name="status_ASSIGNED">assigned</string>
+    <string name="status_IN_REPAIR">in repair</string>
+    <string name="status_LOST">lost</string>
+    <string name="status_RETIRED">retired</string>
+</resources>

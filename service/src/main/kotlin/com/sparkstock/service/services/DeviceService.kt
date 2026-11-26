@@ -137,6 +137,13 @@ class DeviceService(
     /** Anyone takes an available POOL device for themselves, until `dueAt` (by default in LOAN_DEFAULT_DAYS days). */
     @Transactional
     fun checkOut(id: UUID, request: CheckOutDTO, actor: User): Device {
+        // an admin (e.g. the IT manager scanning the label) can lend it to someone else
+        val borrower = request.userId?.takeIf { it != actor.id }?.let { userId ->
+            if (actor.role != UserRole.ADMIN) throw ForbiddenException(Messages.t("loan.othersAdmin"))
+            val person = userRepository.findById(userId).orElseThrow { NotFoundException(Messages.t("user.notFound")) }
+            require(person.isActive) { Messages.t("assign.disabled", person.displayName) }
+            person
+        } ?: actor
         val device = locked(id)
         if (device.type.usage != DeviceUsage.POOL) throw ConflictException(Messages.t("loan.assignedType", device.type.name))
         if (device.status != DeviceStatus.AVAILABLE) throw ConflictException(unavailableMessage(device))
@@ -147,7 +154,18 @@ class DeviceService(
         require(!dueAt.isAfter(now.plus(Duration.ofDays(properties.loans.maxDays)))) {
             Messages.t("loan.tooLong", properties.loans.maxDays)
         }
-        return hold(device, DeviceStatus.ON_LOAN, actor, actor, dueAt, DeviceEventKind.CHECKED_OUT, request.note)
+        return hold(device, DeviceStatus.ON_LOAN, borrower, actor, dueAt, DeviceEventKind.CHECKED_OUT, request.note)
+    }
+
+    /** Several devices to one person in one go (a headset, its controllers, the charger): all are lent or none. */
+    @Transactional
+    fun checkOutMany(request: BatchCheckOutDTO, actor: User): List<Device> {
+        val ids = request.deviceIds.distinct()
+        require(ids.isNotEmpty()) { Messages.t("loan.noDevices") }
+        require(ids.size <= 50) { Messages.t("loan.tooMany", 50) }
+        val single = CheckOutDTO(dueAt = request.dueAt, note = request.note, userId = request.userId)
+        // locking in a fixed order keeps two batches with the same devices from waiting on each other
+        return ids.sorted().map { checkOut(it, single, actor) }.sortedBy { it.assetTag }
     }
 
     /** The borrower or an admin returns a device on loan. */
@@ -159,7 +177,10 @@ class DeviceService(
             throw ForbiddenException(Messages.t("loan.onlyBorrower", device.holder?.displayName ?: Messages.t("loan.theBorrower"), device.assetTag))
         }
         request.locationId?.let { device.location = catalogService.location(it) }
-        return release(device, DeviceStatus.AVAILABLE, actor, DeviceEventKind.CHECKED_IN, request.note)
+        // one that came back broken goes to repair instead of back to stock
+        val status = if (request.condition == ReturnCondition.NEEDS_REPAIR) DeviceStatus.IN_REPAIR else DeviceStatus.AVAILABLE
+        return release(device, status, actor, DeviceEventKind.CHECKED_IN, request.note,
+            request.condition?.let { mapOf("condition" to it.name) })
     }
 
     /** An admin gives an ASSIGNED device to a person, or moves it from one person to another. */
@@ -214,7 +235,9 @@ class DeviceService(
         return device
     }
 
-    private fun release(device: Device, status: DeviceStatus, actor: User, kind: DeviceEventKind, note: String?): Device {
+    private fun release(
+        device: Device, status: DeviceStatus, actor: User, kind: DeviceEventKind, note: String?, extra: Map<String, Any?>? = null,
+    ): Device {
         val from = device.status
         val holder = device.holder
         val wasOverdue = device.isOverdue
@@ -224,7 +247,7 @@ class DeviceService(
         device.dueAt = null
         device.updatedAt = Instant.now()
         record(device, kind, actor, holder = holder, fromStatus = from, toStatus = status, note = note,
-            details = if (wasOverdue) mapOf("overdue" to true) else null)
+            details = ((if (wasOverdue) mapOf("overdue" to true) else emptyMap()) + extra.orEmpty()).takeIf { it.isNotEmpty() })
         return device
     }
 

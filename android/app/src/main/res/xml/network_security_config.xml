@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SparkStock is reached by IP on the office network, without HTTPS (like the website) -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

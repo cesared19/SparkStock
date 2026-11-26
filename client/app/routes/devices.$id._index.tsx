@@ -383,6 +383,21 @@ export default function DevicePage() {
 												{t.device.late}
 											</span>
 										)}
+										{event.details?.condition === 'NEEDS_REPAIR' && (
+											<span className="ml-1 rounded-full bg-yellow-100 px-2 text-xs text-yellow-800">
+												{t.device.cameBackBroken}
+											</span>
+										)}
+										{event.details?.condition === 'OK' && (
+											<span className="ml-1 rounded-full bg-green-100 px-2 text-xs text-green-800">
+												{t.device.cameBackOk}
+											</span>
+										)}
+										{typeof event.details?.inventoryCheck === 'string' && (
+											<span className="ml-1 text-xs text-gray-500">
+												· {t.device.movedByCheck(event.details.inventoryCheck)}
+											</span>
+										)}
 									</div>
 									<div className="text-xs text-gray-500">
 										{formatDateTime(event.createdAt, t.locale)}
@@ -392,6 +407,25 @@ export default function DevicePage() {
 									</div>
 									{event.note && (
 										<div className="mt-1 text-gray-700">“{event.note}”</div>
+									)}
+									{event.photoIds && event.photoIds.length > 0 && (
+										<div className="mt-2 flex flex-wrap gap-2">
+											{event.photoIds.map((photoId, index) => (
+												<a
+													key={photoId}
+													href={`/event-photos/${photoId}`}
+													target="_blank"
+													rel="noreferrer"
+												>
+													<img
+														src={`/event-photos/${photoId}`}
+														alt={t.device.photo(index + 1)}
+														loading="lazy"
+														className="h-20 w-20 rounded-md border border-gray-200 object-cover"
+													/>
+												</a>
+											))}
+										</div>
 									)}
 								</li>
 							))}

@@ -165,6 +165,11 @@ const en = {
 		warrantyEnds: 'Warranty ends',
 		history: 'History',
 		late: 'late',
+		cameBackOk: 'came back fine',
+		cameBackBroken: 'came back for repair',
+		photo: (n: number) => `Photo ${n}`,
+		movedByCheck: (location: string) =>
+			`moved to ${location} in an inventory check`,
 		by: (name: string) => ` by ${name}`,
 		labelAndStatus: 'Label and status',
 		qrAlt: (tag: string) => `QR code for ${tag}`,
@@ -611,6 +616,11 @@ const es: Dictionary = {
 		warrantyEnds: 'Fin de garantía',
 		history: 'Historial',
 		late: 'tarde',
+		cameBackOk: 'volvió bien',
+		cameBackBroken: 'volvió para reparación',
+		photo: (n: number) => `Foto ${n}`,
+		movedByCheck: (location: string) =>
+			`movido a ${location} en una revisión de inventario`,
 		by: (name: string) => ` por ${name}`,
 		labelAndStatus: 'Etiqueta y estado',
 		qrAlt: (tag: string) => `Código QR de ${tag}`,
@@ -803,7 +813,9 @@ const es: Dictionary = {
 		onLoanHint: (assigned: number) => `y ${assigned} asignados a personas`,
 		notReturned: 'Sin devolver',
 		notReturnedHint: (attention: number) =>
-			`pasaron su fecha de devolución · ${attention} ${attention === 1 ? 'vence' : 'vencen'} en un día`,
+			`pasaron su fecha de devolución · ${attention} ${
+				attention === 1 ? 'vence' : 'vencen'
+			} en un día`,
 		allReturned: 'Todo a tiempo',
 		health: { good: 'Al día', warning: 'Atención', bad: 'Atrasado' },
 		utilization: 'En uso',

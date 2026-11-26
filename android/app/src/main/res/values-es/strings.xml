@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SparkStock Scanner</string>
+    <string name="ok">Aceptar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="back">Atrás</string>
+    <string name="retry">Reintentar</string>
+    <string name="done">Listo</string>
+    <string name="loading">Cargando…</string>
+
+    <string name="setup_title">Conectar con SparkStock</string>
+    <string name="setup_intro">La dirección con la que abres SparkStock en el navegador, p. ej. 192.168.1.20:3100.</string>
+    <string name="server_address">Dirección de SparkStock</string>
+    <string name="connect">Conectar</string>
+    <string name="invalid_address">Esa no es una dirección válida.</string>
+    <string name="cant_reach">No se puede llegar a SparkStock en esa dirección. Revisa la dirección y que el teléfono esté en el Wi-Fi de la oficina.</string>
+    <string name="sign_in_intro">Entra con tu cuenta de SparkyTC.</string>
+    <string name="username">Usuario</string>
+    <string name="password">Contraseña</string>
+    <string name="sign_in">Entrar</string>
+    <string name="admins_only">Esta app es para los admins de SparkyTC (el IT Manager). Pide a un admin que preste o reciba los dispositivos.</string>
+    <string name="change_server">Cambiar servidor</string>
+    <string name="sign_out">Salir</string>
+    <string name="session_expired">Tu sesión expiró, vuelve a entrar.</string>
+
+    <string name="hello">Hola, %1$s</string>
+    <string name="lend">Prestar</string>
+    <string name="lend_hint">Escanea dispositivos y préstalos a alguien</string>
+    <string name="give_back">Recibir</string>
+    <string name="give_back_hint">Escanea un dispositivo que alguien devuelve</string>
+    <string name="inventory">Revisar inventario</string>
+    <string name="inventory_hint">Escanea lo que hay en un gabinete o cuarto y compáralo con SparkStock</string>
+
+    <string name="camera_needed">Se necesita la cámara para escanear las etiquetas QR.</string>
+    <string name="allow_camera">Permitir la cámara</string>
+    <string name="open_settings">Abrir ajustes</string>
+    <string name="flashlight">Linterna</string>
+    <string name="point_camera">Apunta la cámara a una etiqueta de SparkStock</string>
+    <string name="not_a_label">Ese código QR no es una etiqueta de SparkStock.</string>
+    <string name="type_tag">Escribir etiqueta</string>
+    <string name="tag_hint">p. ej. VR-0001</string>
+    <string name="add">Agregar</string>
+
+    <string name="lend_title">Prestar dispositivos</string>
+    <string name="scanned_count">%1$d escaneados</string>
+    <string name="nothing_scanned">Escanea los dispositivos a prestar: el visor, sus controles, el cargador…</string>
+    <string name="not_available">No disponible: %1$s</string>
+    <string name="remove">Quitar</string>
+    <string name="next">Siguiente</string>
+    <string name="choose_person">¿Quién se los lleva?</string>
+    <string name="search_people">Buscar personas</string>
+    <string name="recent">Recientes</string>
+    <string name="everyone">Todos</string>
+    <string name="return_by">Devolver antes del</string>
+    <string name="note">Nota (opcional)</string>
+    <string name="lend_confirm">Prestar %1$d dispositivos a %2$s hasta el %3$s</string>
+    <string name="lent_title">Prestado a %1$s</string>
+    <string name="lent_until">Hasta el %1$s</string>
+    <string name="lend_more">Prestar más</string>
+    <string name="already_scanned">%1$s ya está en la lista</string>
+
+    <string name="return_title">Recibir dispositivos</string>
+    <string name="on_loan_to">Prestado a %1$s</string>
+    <string name="due">Vence el %1$s</string>
+    <string name="overdue">Atrasado</string>
+    <string name="not_on_loan">%1$s no está prestado (%2$s).</string>
+    <string name="how_came_back">¿Cómo regresó?</string>
+    <string name="condition_ok">Bien</string>
+    <string name="condition_repair">Necesita reparación</string>
+    <string name="take_photo">Tomar foto</string>
+    <string name="retake_photo">Tomarla de nuevo</string>
+    <string name="confirm_return">Recibir %1$s</string>
+    <string name="returned">%1$s recibido</string>
+    <string name="returned_repair">%1$s recibido y enviado a reparación</string>
+    <string name="photo_failed">La devolución se guardó, pero la foto no se pudo subir: %1$s</string>
+    <string name="scan_next">Escanear el siguiente</string>
+
+    <string name="inventory_title">Revisar inventario</string>
+    <string name="choose_location">¿Qué ubicación vas a revisar?</string>
+    <string name="checking">Revisando %1$s</string>
+    <string name="finish">Terminar (%1$d)</string>
+    <string name="found">Donde debe estar (%1$d)</string>
+    <string name="missing">Faltan (%1$d)</string>
+    <string name="elsewhere">Aquí, pero SparkStock lo tiene en otro lado (%1$d)</string>
+    <string name="unknown">No están en SparkStock (%1$d)</string>
+    <string name="move_here">Mover %1$d aquí</string>
+    <string name="moved">Se movieron %1$d dispositivos a %2$s.</string>
+    <string name="all_in_place">Todo está donde SparkStock dice.</string>
+    <string name="with_person">con %1$s</string>
+    <string name="at_location">en %1$s</string>
+    <string name="no_location">sin ubicación</string>
+
+    <string name="status_AVAILABLE">disponible</string>
+    <string name="status_ON_LOAN">prestado</string>
+    <string name="status_ASSIGNED">asignado</string>
+    <string name="status_IN_REPAIR">en reparación</string>
+    <string name="status_LOST">perdido</string>
+    <string name="status_RETIRED">dado de baja</string>
+</resources>

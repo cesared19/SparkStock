@@ -52,6 +52,7 @@ abstract class IntegrationTestBase {
 
     /** Removes the devices so each test starts from the seeded catalog. */
     fun clearDevices() {
+        jdbc.execute("DELETE FROM event_photos")
         jdbc.execute("DELETE FROM device_events")
         jdbc.execute("DELETE FROM devices")
     }

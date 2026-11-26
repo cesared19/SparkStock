@@ -136,11 +136,13 @@ data class DeviceEventDTO(
     val note: String?,
     val details: Map<String, Any?>?,
     val createdAt: Instant,
+    // photos kept with the event, e.g. how a device came back (GET /api/v1/event-photos/{id})
+    val photoIds: List<Long> = emptyList(),
 ) {
     companion object {
-        fun of(event: DeviceEvent) = DeviceEventDTO(
+        fun of(event: DeviceEvent, photoIds: List<Long> = emptyList()) = DeviceEventDTO(
             event.id, event.kind, PersonDTO.of(event.actor), PersonDTO.of(event.holder),
-            event.fromStatus, event.toStatus, event.note, event.details, event.createdAt,
+            event.fromStatus, event.toStatus, event.note, event.details, event.createdAt, photoIds,
         )
     }
 }
@@ -163,9 +165,40 @@ data class SaveDeviceDTO(
     val assetTag: String? = null,
 )
 
-data class CheckOutDTO(val dueAt: Instant? = null, val note: String? = null)
+/** `userId` lends it to someone else (admins only); without it the device goes to whoever asks. */
+data class CheckOutDTO(val dueAt: Instant? = null, val note: String? = null, val userId: UUID? = null)
 
-data class CheckInDTO(val locationId: Long? = null, val note: String? = null)
+/** Several devices to one person at once, e.g. a headset with its controllers; all or nothing. */
+data class BatchCheckOutDTO(
+    val deviceIds: List<UUID> = emptyList(),
+    val userId: UUID? = null,
+    val dueAt: Instant? = null,
+    val note: String? = null,
+)
+
+/** How a device came back: NEEDS_REPAIR sends it to repair instead of back to stock. */
+enum class ReturnCondition { OK, NEEDS_REPAIR }
+
+data class CheckInDTO(val locationId: Long? = null, val note: String? = null, val condition: ReturnCondition? = null)
+
+/** The asset tags scanned in a location, to compare with what SparkStock says is there. */
+data class InventoryCheckDTO(val locationId: Long? = null, val assetTags: List<String> = emptyList(), val apply: Boolean = false)
+
+data class MisplacedDeviceDTO(val device: DeviceDTO, val canMove: Boolean)
+
+data class InventoryCheckResultDTO(
+    val location: LocationDTO,
+    // where SparkStock says they are, and scanned
+    val found: List<DeviceDTO>,
+    // where SparkStock says they are, but not scanned
+    val missing: List<DeviceDTO>,
+    // scanned here, but SparkStock has them somewhere else, on loan or lost
+    val elsewhere: List<MisplacedDeviceDTO>,
+    // scanned tags that aren't in SparkStock
+    val unknown: List<String>,
+    // devices moved here (with apply), from elsewhere
+    val moved: Int,
+)
 
 data class AssignDTO(val userId: UUID? = null, val note: String? = null)
 

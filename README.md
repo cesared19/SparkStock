@@ -38,6 +38,9 @@ devices a tester has (to record the device a test ran on).
 - **English or Spanish**, chosen by each person with **ES / EN** in the menu or on the sign-in page and kept in their
   browser; the first time it follows the browser's language. Pages, reports, labels, the server's messages and the
   reminders in SparkyTC's bell (in the language each person last used) are translated.
+- **Scanner app for the IT manager** (Android, in [`android/`](android/README.md)): lend several devices to someone,
+  receive them (fine or needing repair, with a note and a photo) and check what's in a cabinet, by scanning the QR
+  labels with the phone's camera. It talks to SparkStock by IP, without HTTPS, through `http://<server>:3100/api/v1`.
 - **Test coverage** (**Coverage**): for a SparkyTC project and build, which target models (and versions) results were
   recorded on and how they went (*tested, passing*, *tested, with failures* or *not tested*), plus models tested without
   being targets. Admins set each project's targets, picking from the models in stock or typing them; a target without
@@ -67,7 +70,21 @@ Each request is checked against SparkyTC's `/api/v1/auth/me` again every 5 minut
 (`SPARKYTC_SESSION_CACHE_SECONDS`), so an account disabled or demoted in SparkyTC stops working here too. Sessions
 last as long as the SparkyTC session (7 days). Admins' *Assign* list comes from SparkyTC's user list.
 
-### Integration API (for SparkyTC)
+### API for the scanner app
+
+The website forwards `/api/v1/*` to the backend (`routes/api.v1.$.tsx`), passing only `Authorization`, `Content-Type`,
+`Accept` and `Accept-Language` (never the site's cookie) and rejecting paths that leave `/api/v1`. The app signs in with
+`POST /api/v1/auth/login` and uses, besides what the website does:
+
+- `POST /devices/check-out` `{ deviceIds, userId, dueAt, note }`: several devices to one person, all or nothing. An
+  admin can lend to someone else (`userId`, also on `POST /devices/{id}/check-out`).
+- `POST /devices/{id}/check-in` `{ condition: OK | NEEDS_REPAIR, note }`: *Needs repair* sends it to *In repair*.
+- `POST /devices/{id}/events/{eventId}/photos` (multipart `file`: JPEG, PNG or WebP, 10 MB, 5 per event) and
+  `GET /event-photos/{id}`: photos kept with an event of the history.
+- `POST /inventory-checks` `{ locationId, assetTags, apply }` (admins): found, missing, elsewhere (with `canMove`) and
+  unknown; `apply: true` moves the movable ones to that location (lost ones come back as available).
+
+## Integration API (for SparkyTC)
 
 Read only, with the shared secret `STOCK_INTEGRATION_TOKEN` as `Authorization: Bearer <token>` (off while empty).
 The backend is published only on `127.0.0.1`; SparkyTC reaches it on the shared docker network as

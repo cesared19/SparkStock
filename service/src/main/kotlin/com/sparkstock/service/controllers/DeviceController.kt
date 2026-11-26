@@ -12,7 +12,10 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/api/v1")
-class DeviceController(private val deviceService: DeviceService) {
+class DeviceController(
+    private val deviceService: DeviceService,
+    private val scannerService: com.sparkstock.service.services.ScannerService,
+) {
 
     @GetMapping("/dashboard")
     fun dashboard() = DataResponse(data = deviceService.dashboard(CurrentUser.get()))
@@ -55,6 +58,11 @@ class DeviceController(private val deviceService: DeviceService) {
     fun checkOut(@PathVariable id: UUID, @RequestBody(required = false) request: CheckOutDTO?) =
         detail(deviceService.checkOut(id, request ?: CheckOutDTO(), CurrentUser.get()))
 
+    /** Several devices to one person at once (the scanner app); all or nothing. */
+    @PostMapping("/devices/check-out")
+    fun checkOutMany(@RequestBody request: BatchCheckOutDTO) =
+        DataResponse(data = deviceService.checkOutMany(request, CurrentUser.get()).map(DeviceDTO::of))
+
     @PostMapping("/devices/{id}/check-in")
     fun checkIn(@PathVariable id: UUID, @RequestBody(required = false) request: CheckInDTO?) =
         detail(deviceService.checkIn(id, request ?: CheckInDTO(), CurrentUser.get()))
@@ -73,8 +81,32 @@ class DeviceController(private val deviceService: DeviceService) {
     fun changeStatus(@PathVariable id: UUID, @RequestBody request: ChangeStatusDTO) =
         detail(deviceService.changeStatus(id, request, CurrentUser.get()))
 
-    private fun detail(device: Device) =
-        DataResponse(data = DeviceDetailDTO(DeviceDTO.of(device), deviceService.events(device).map(DeviceEventDTO::of)))
+    /** A photo of how a device came back, added to that event of its history (multipart `file`). */
+    @PostMapping("/devices/{id}/events/{eventId}/photos", consumes = [org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun addPhoto(@PathVariable id: UUID, @PathVariable eventId: Long, @RequestParam("file") file: org.springframework.web.multipart.MultipartFile) =
+        DataResponse(data = mapOf("photoId" to scannerService.addPhoto(id, eventId, file, CurrentUser.get())))
+
+    @GetMapping("/event-photos/{id}")
+    fun photo(@PathVariable id: Long): org.springframework.http.ResponseEntity<ByteArray> {
+        val photo = scannerService.photo(id)
+        return org.springframework.http.ResponseEntity.ok()
+            .contentType(org.springframework.http.MediaType.parseMediaType(photo.contentType))
+            .header("X-Content-Type-Options", "nosniff")
+            .header(org.springframework.http.HttpHeaders.CACHE_CONTROL, "private, max-age=86400")
+            .body(photo.data)
+    }
+
+    /** Compares what was scanned in a location with SparkStock, and with `apply` moves what was found there. */
+    @AdminOnly
+    @PostMapping("/inventory-checks")
+    fun inventoryCheck(@RequestBody request: InventoryCheckDTO) =
+        DataResponse(data = scannerService.inventoryCheck(request, CurrentUser.get()))
+
+    private fun detail(device: Device): DataResponse<DeviceDetailDTO> {
+        val events = deviceService.events(device)
+        val photos = scannerService.photoIds(events)
+        return DataResponse(data = DeviceDetailDTO(DeviceDTO.of(device), events.map { DeviceEventDTO.of(it, photos[it.id].orEmpty()) }))
+    }
 }
 
 @RestController

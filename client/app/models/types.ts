@@ -99,6 +99,8 @@ export interface DeviceEvent {
 	note?: string
 	details?: Record<string, unknown>
 	createdAt: Timestamp
+	// photos kept with the event, e.g. how a device came back
+	photoIds?: number[]
 }
 
 export interface DeviceDetail {
@@ -183,7 +185,13 @@ export interface Report {
 		total: number
 		retired: number
 		byStatus: Record<Exclude<DeviceStatus, 'RETIRED'>, number>
-		byType: { typeId: number; name: string; usage: DeviceUsage; total: number; byStatus: Record<string, number> }[]
+		byType: {
+			typeId: number
+			name: string
+			usage: DeviceUsage
+			total: number
+			byStatus: Record<string, number>
+		}[]
 		byLocation: { name?: string; count: number }[]
 	}
 	loans: {
@@ -195,9 +203,19 @@ export interface Report {
 		averageHours?: number
 		medianHours?: number
 		averagePlannedHours?: number
-		longest?: { device: DeviceRef; person?: Person; hours: number; active: boolean }
+		longest?: {
+			device: DeviceRef
+			person?: Person
+			hours: number
+			active: boolean
+		}
 		byDevice: { device: DeviceRef; loans: number; hours: number }[]
-		byPerson: { person: Person; loans: number; hours: number; returnedLate: number }[]
+		byPerson: {
+			person: Person
+			loans: number
+			hours: number
+			returnedLate: number
+		}[]
 	}
 	usage: {
 		devices: {

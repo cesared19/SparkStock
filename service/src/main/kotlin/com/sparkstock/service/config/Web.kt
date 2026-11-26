@@ -133,6 +133,9 @@ class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException::class, MethodArgumentTypeMismatchException::class)
     fun unreadable(ex: Exception) = error(HttpStatus.BAD_REQUEST, "Validation Error", Messages.t("web.badRequest"))
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException::class)
+    fun tooLarge(ex: Exception) = error(HttpStatus.BAD_REQUEST, "Validation Error", Messages.t("web.tooLarge"))
+
     @ExceptionHandler(NotFoundException::class)
     fun notFound(ex: NotFoundException) = error(HttpStatus.NOT_FOUND, "Not Found", ex.message)
 
